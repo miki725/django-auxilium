@@ -52,17 +52,17 @@ def lazy(f):
     """
     Lazy evaluation decorator
 
-    example usage:
+    Example usage:
 
     >>> @lazy
     ... def a(bar):
     ...   print "invoking a with {0}".format(bar)
     ...   return bar + "foo"
 
-    >>> baz = a("foo")
-    >>> baz
-    invoking a with foo
-    <lib.lazy_util._LazyWrapper instance at 0x7f6249c595a8>
+    >>> l = a("bar")
+    >>> print l
+    invoking a with bar
+    barfoo
     """
     @wraps(f)
     def newf(*args, **kwargs):

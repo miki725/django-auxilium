@@ -21,24 +21,49 @@ class Decorator(object):
     Examples
     --------
 
-    ::
+    >>> class D(Decorator):
+    ...     ARGUMENTS = {'debug': False}
+    ...     def get_wrapped_f(self, f):
+    ...         def wrapped(*args, **kwargs):
+    ...             print 'called wrapped with', args, kwargs
+    ...             if self.kwargs['debug']:
+    ...                 print 'debug here'
+    ...             return f(*args, **kwargs)
+    ...         return wrapped
+    ...
+    >>> decorator = D().to_decorator()
 
-        decorator = Decorator().to_decorator()
+    >>> # not initialized (default values will be used if defined)
+    >>> @decorator
+    ... def sum(a, b):
+    ...    return a + b
 
-        # not initialized (default values will be used if defined)
-        @decorator
-        def h():
-            pass
+    >>> sum(5, 6)
+    called wrapped with (5, 6) {}
+    11
 
-        # initialized with no parameters (default values will be used if defined)
-        @decorator() # or Decorator()
-        def g():
-            pass
+    >>> # initialized with no parameters (default values will be used if defined)
+    >>> @decorator
+    ... def sum(a, b):
+    ...    return a + b
 
-        # initialized with keyword parameters
-        @decorator(foo='bar')
-        def f():
-            pass
+    >>> sum(7, 8)
+    called wrapped with (7, 8) {}
+    15
+
+    # initialized with keyword parameters
+    >>> @decorator(debug=True)
+    ... def sum(a, b):
+    ...    "Sum function"
+    ...    return a + b
+
+    >>> sum(9, 10)
+    called wrapped with (9, 10) {}
+    debug here
+    19
+
+    >>> sum.__doc__ == 'Sum function'
+    True
 
     Attributes
     ----------
@@ -51,7 +76,6 @@ class Decorator(object):
 
     def __init__(self, *args, **kwargs):
         self.set_kwargs(kwargs)
-        self.f = None
 
     def __call__(self, *args, **kwargs):
         f = args[0]
@@ -142,7 +166,16 @@ class HybridDecorator(Decorator):
         frames = inspect.stack()
         defined_in_class = False
 
-        frame_depth = 5
+        diff = 0
+
+        for cls in inspect.getmro(self.__class__):
+            if cls is HybridDecorator:
+                break
+            if 'get_wrapped_f' in cls.__dict__:
+                diff += 1
+
+        frame_depth = 4 + diff
+
         if len(frames) > frame_depth:
             maybe_class_frame = frames[frame_depth]
             statement_list = maybe_class_frame[4]
@@ -162,6 +195,28 @@ class HybridDecorator(Decorator):
 
 
 class Cache(HybridDecorator):
+    """
+    Examples
+    --------
+
+    >>> @Cache()
+    ... def compute():
+    ...     return 'foo'
+
+    >>> compute()
+    'foo'
+
+    >>> @Cache(debug=True)
+    ... def compute():
+    ...     return 'foo'
+
+    >>> compute()
+    Computing value for the first time since it's not in cache.
+    'foo'
+    >>> compute()
+    Getting value from cache
+    'foo'
+    """
     ARGUMENTS = dict(HybridDecorator.ARGUMENTS)
     ARGUMENTS.update({
         'debug': False,
@@ -232,6 +287,28 @@ class Cache(HybridDecorator):
 
 
 class Memoize(Cache):
+    """
+    Examples
+    --------
+
+    >>> @Memoize()
+    ... def sum(a, b):
+    ...     return a + b
+
+    >>> sum(1, 2)
+    3
+
+    >>> @Memoize(debug=True)
+    ... def sum(a, b):
+    ...     return a + b
+
+    >>> sum(3, 4)
+    Computing value for the first time since it's not in cache.
+    7
+    >>> sum(3, 4)
+    Getting value from cache
+    7
+    """
     ARGUMENTS = dict(Cache.ARGUMENTS)
     ARGUMENTS.update({
         'default_cache_value': {},
@@ -240,7 +317,10 @@ class Memoize(Cache):
     })
 
     def in_cache(self, cache, *args, **kwargs):
-        self.cache_key = str(args[1:]) + str(kwargs)
+        if self.in_class:
+            self.cache_key = str(args[1:]) + str(kwargs)
+        else:
+            self.cache_key = str(args) + str(kwargs)
         return self.cache_key in cache
 
     def from_cache(self, cache, *args, **kwargs):
