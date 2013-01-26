@@ -115,29 +115,22 @@ class RangeSelector(forms.CharField):
                     raise forms.ValidationError(self.error_messages['values'])
 
         # functions for validating rows and columns
-        def validateMaxRows(n):
-            if datarange[1]:
-                if datarange[3] - datarange[1] + 1 > n:
-                    return False
-                return True
-            return None
-
-        def validateMaxCols(n):
-            if datarange[0]:
-                if datarange[2] - datarange[0] + 1 > n:
+        def validateMax(n, offset=0):
+            if datarange[0 + offset]:
+                if datarange[2 + offset] - datarange[0 + offset] + 1 > n:
                     return False
                 return True
             return None
 
         # validate the maximum rows and columns
         if self.max_cols:
-            if validateMaxCols(self.max_cols) is False:
+            if validateMax(self.max_cols) is False:
                 raise forms.ValidationError(self.error_messages['max_cols'].format(self.max_cols))
         if self.max_rows:
-            if validateMaxRows(self.max_rows) is False:
+            if validateMax(self.max_rows, 1) is False:
                 raise forms.ValidationError(self.error_messages['max_rows'].format(self.max_rows))
         if self.max_either:
-            if not validateMaxRows(self.max_either) and not validateMaxCols(self.max_either):
+            if not validateMax(self.max_either, 1) and not validateMax(self.max_either):
                 raise forms.ValidationError(self.error_messages['max_either'].format(self.max_either))
 
         return datarange
