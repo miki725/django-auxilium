@@ -39,3 +39,34 @@ class UserModel(models.Model):
 
     class Meta(object):
         abstract = True
+
+
+class NoteModel(BaseModel):
+    """
+    This model adds a notes field
+
+    Attributes
+    ----------
+    notes : str
+    """
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        abstract = True
+
+
+class TitleDescriptionModel(BaseModel):
+    """
+    This model adds a notes field
+
+    Attributes
+    ----------
+    title : str
+        Maximum length is 256 character
+    description : str
+    """
+    title = models.CharField(max_length=256)
+    description = models.TextField(blank=True)
+
+    class Meta:
+        abstract = True
