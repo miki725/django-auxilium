@@ -58,6 +58,19 @@ class FileFieldExt_Test(TestCase):
             with self.assertRaises(forms.ValidationError):
                 form.clean(file)
 
+    def test_no_mimetype(self):
+        """
+        Make sure ``ValidationError`` is raised if uploaded file has no mimetype
+        """
+        form = FileFieldExt(required=False, type_whitelist=self.good_types)
+
+        for t in self.good_types:
+            name = 'somefooname'
+            file = UploadedFile(name=name, size=1, content_type=t)
+            del file.content_type
+            with self.assertRaises(forms.ValidationError):
+                form.clean(file)
+
     def test_both(self):
         """
         Test that both extensions and mimetypes are validated correctly both
