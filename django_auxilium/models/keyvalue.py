@@ -11,12 +11,18 @@ class KeyValueModel(models.Model):
     key : str
         The key value of the parameter to be stored
     value : str, optional
-        The actual value of the parameter to be stored casted as string
-        The field can be None. This is necessary for non-string data-types.
-        Even though Django does not recommend this, it is needed in this case.
-    value_type : str, optional
-        The data-type of the value. This is used to be able to get properly casted value back from the database.
-        Default if str.
+        Value of the key-value pair.
+
+        The actual value of the parameter to be stored casted as string.
+        When this attribute is retreived, it is automatically casted to the
+        proper data-type. The field value can be ``None``. Even though that
+        is not recommended behavior for strings because it itroduces two
+        boolean false condition - ``None`` and ``''`` (empty string),
+        it is necessary for non-string values (e.g. ``int``).
+    value_type : DataType
+        The data-type of the value. This is used in order to be able to
+        encode and decode the ``value`` attribute. The default data-type
+        is ``unicode``.
     """
     key = models.CharField(max_length=32)
     value = ValueDataTypeField(null=True, blank=True)

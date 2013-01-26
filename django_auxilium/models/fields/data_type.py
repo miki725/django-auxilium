@@ -30,7 +30,7 @@ class DataType(object):
             self.datatype = datatype.datatype
 
         else:
-            raise TypeError('Unsupported %s' % str(t_datatype))
+            raise TypeError('Unsupported {}'.format(str(t_datatype)))
 
     def encode(self, value):
         if value is None:
