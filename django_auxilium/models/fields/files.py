@@ -75,7 +75,7 @@ class OriginalFilenameRandomFileField(RandomFileField):
         filename_field = kwargs.pop('filename_field', 'filename')
         kwargs['upload_to'] = self.upload_to(kwargs['upload_to'], filename_field)
 
-        super(OriginalFilenameRandomFileField, self).__init__(*args, **kwargs)
+        FileField.__init__(self, *args, **kwargs)
 
     def upload_to(self, path, filename_field):
         """
