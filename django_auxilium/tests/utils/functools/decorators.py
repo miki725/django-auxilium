@@ -5,30 +5,106 @@ from django_auxilium.utils.functools.decorators import (Decorator, HybridDecorat
 
 
 class DecoratorTest(TestCase):
-    def test_set_kwargs(self):
+    def test_validate_parameter_config(self):
         """
-        Make sure the ``set_kwargs`` properly sets the ``ARGUMENTS`` attribute.
+        Make sure ``validate_parameter_config`` validates the parameters config
         """
-        keys = ['foo', 'bar', 'hello', 'world']
-        defaults = keys[:]
-        values = keys[::-1]
-
-        # if not ARGUMENTS, then kwargs should be empty
         d = Decorator()
-        d.set_kwargs(dict(zip(keys, values)))
-        self.assertEqual(d.kwargs, {})
 
-        d.ARGUMENTS = dict(zip(keys, defaults))
-        d.set_kwargs(dict(zip(keys, values)))
-        self.assertEqual(d.kwargs, dict(zip(keys, values)))
+        d.PARAMETERS = ('foo', '*foo')
+        with self.assertRaisesMessage(SyntaxError, 'Cannot redefine the same parameter'):
+            d.validate_parameter_config()
 
-    def test_get_wrapped_f(self):
+        d.PARAMETERS = ('foo*',)
+        with self.assertRaisesMessage(SyntaxError, 'Invalid identifier name "foo*"'):
+            d.validate_parameter_config()
+
+        for p in ['*foo', '**foo']:
+            d.PARAMETERS = (p,)
+            self.assertEqual(d.validate_parameter_config(), None)
+
+        d.PARAMETERS = ('foo', '*bar', 'cat',)
+        m = '*args or **kwargs cannot be before regular parameters'
+        with self.assertRaisesMessage(SyntaxError, m):
+            d.validate_parameter_config()
+
+        d.PARAMETERS = ('foo', 'bar', '**cat', '*dog')
+        m = '*args have to be before **kwargs'
+        with self.assertRaisesMessage(SyntaxError, m):
+            d.validate_parameter_config()
+
+        d.PARAMETERS = ('foo', 'bar', '*cat', '**dog')
+        self.assertEqual(d.validate_parameter_config(), None)
+
+        d.DEFAULTS = {'snake': None}
+        m = 'Defaults must be defined in parameters attribute'
+        with self.assertRaisesMessage(SyntaxError, m):
+            d.validate_parameter_config()
+
+        d.DEFAULTS = {'*cat': None}
+        m = 'Invalid syntax for default parameter'
+        with self.assertRaisesMessage(SyntaxError, m):
+            d.validate_parameter_config()
+
+        d.DEFAULTS = {'foo': None}
+        m = 'Optional parameter before required parameter'
+        with self.assertRaisesMessage(SyntaxError, m):
+            d.validate_parameter_config()
+
+        d.DEFAULTS = {'bar': None}
+        m = 'Optional parameter before required parameter'
+        self.assertEqual(d.validate_parameter_config(), None)
+
+    def test_get_parameters(self):
         """
-        Make sure in ``Decorator``, ``get_wrapped_f`` returns the input.
+        Make sure ``get_parameters`` properly parses the given parameters
+        """
+        d = Decorator()
+        with self.assertRaisesMessage(TypeError, 'Too many arguments'):
+            d.get_parameters(*('foo',))
+        d.PARAMETERS = ('foo',)
+        self.assertEqual(d.get_parameters(*('foo',)), {'foo': 'foo'})
+        d.DEFAULTS = {'foo': 'bar'}
+        self.assertEqual(d.get_parameters(), {'foo': 'bar'})
+
+        d = Decorator()
+        with self.assertRaisesMessage(TypeError, 'Too many arguments'):
+            d.get_parameters(**{'foo': 'bar'})
+        d.PARAMETERS = ('foo',)
+        self.assertEqual(d.get_parameters(**{'foo': 'bar'}), {'foo': 'bar'})
+        d.DEFAULTS = {'foo': 'bar'}
+        self.assertEqual(d.get_parameters(), {'foo': 'bar'})
+
+        d = Decorator()
+        d.PARAMETERS = ('foo',)
+        with self.assertRaisesMessage(TypeError, '"foo" argument is not provided'):
+            d.get_parameters()
+
+        d = Decorator()
+        d.PARAMETERS = ('foo',)
+        with self.assertRaisesMessage(SyntaxError, '"foo" parameter is repeated'):
+            d.get_parameters(*('foo',), **{'foo': 'foo'})
+
+    def test_set_parameters(self):
+        """
+        Make sure ``set_parameters`` sets the output of ``get_parameters`` to
+        ``parameters`` attribute.
+        """
+        d = Decorator()
+        d.get_parameters = lambda a: a
+
+        for i in range(5):
+            d.set_parameters(i)
+            self.assertEqual(d.parameters, i)
+
+    def test_get_wrapped_object(self):
+        """
+        Make sure in ``Decorator``, ``get_wrapped_object`` returns the input.
         """
         d = Decorator()
         for i in range(5):
-            self.assertEqual(d.get_wrapped_f(i), i)
+            d.to_wrap = i
+            self.assertEqual(d.get_wrapped_object(), i)
 
     def test_to_decorator(self):
         """
@@ -48,7 +124,7 @@ class DecoratorTest(TestCase):
         preserving private attributes like ``__doc__``.
         """
         class D(Decorator):
-            def get_wrapped_f(self, f):
+            def get_wrapped_object(self):
                 return lambda a: a
 
         d = D.to_decorator()
@@ -116,8 +192,9 @@ class HybridDecoratorTest(TestCase):
         # --------------------------------
 
         class D(HybridDecorator):
-            def get_wrapped_f(self, f):
-                return super(D, self).get_wrapped_f(f)
+            def get_wrapped_object(self):
+                return super(D, self).get_wrapped_object()
+
         d = D()
 
         class Foo(object):
@@ -190,7 +267,7 @@ class CacheTest(TestCase):
         foo = Foo()
         foo.foo()
 
-        self.assertTrue(foo._foo is d.get_cache(foo))
+        self.assertTrue(getattr(foo, '_foo') is d.get_cache(foo))
 
     def test_in_cache(self):
         """
@@ -241,11 +318,10 @@ class CacheTest(TestCase):
         for i in range(5):
             self.assertEqual(d.from_cache(i), i)
 
-    def test_get_wrapped_f(self):
+    def test_get_wrapped_object(self):
         """
         Make sure the cached value is returned instead recomputing it
         """
-
         d = Cache()
 
         def prepare(d):
@@ -273,24 +349,24 @@ class CacheTest(TestCase):
         # recompute
         foo.i = 0
         self.assertEqual(foo.f(recompute=True), foo.values[0])
-        d.kwargs['recompute'] = True
+        d.parameters['recompute'] = True
         self.assertEqual(foo.f(), foo.values[1])
-        d.kwargs['recompute'] = False
-        d.kwargs['recompute_parameter'] = 'bar'
+        d.parameters['recompute'] = False
+        d.parameters['recompute_parameter'] = 'bar'
         self.assertEqual(foo.f(bar=True), foo.values[2])
 
         # is_cached
-        self.assertTrue(getattr(foo.f, d.kwargs['is_cached']))
+        self.assertTrue(getattr(foo.f, d.parameters['is_cached']))
         d = Cache()
-        d.kwargs['is_cached'] = 'hello'
+        d.parameters['is_cached'] = 'hello'
         Foo, foo = prepare(d)
         foo.f()
         self.assertTrue(getattr(Foo.f, 'hello'))
 
         # cache_attr
-        self.assertTrue(hasattr(foo.f, d.kwargs['cache_attr']))
+        self.assertTrue(hasattr(foo.f, d.parameters['cache_attr']))
         d = Cache()
-        d.kwargs['cache_attr'] = 'hello'
+        d.parameters['cache_attr'] = 'hello'
         Foo, foo = prepare(d)
         foo.f()
         self.assertTrue(hasattr(Foo.f, 'hello'))
@@ -322,11 +398,11 @@ class MemoizeTest(TestCase):
         foo = Foo()
         foo.foo(4)
 
-        self.assertFalse('(5,){}' in foo._foo)
-        self.assertFalse(d.in_cache(foo._foo, foo, 5))
+        self.assertFalse('(5,){}' in getattr(foo, '_foo'))
+        self.assertFalse(d.in_cache(getattr(foo, '_foo'), foo, 5))
         foo.foo(5)
-        self.assertTrue('(5,){}' in foo._foo)
-        self.assertTrue(d.in_cache(foo._foo, foo, 5))
+        self.assertTrue('(5,){}' in getattr(foo, '_foo'))
+        self.assertTrue(d.in_cache(getattr(foo, '_foo'), foo, 5))
 
     def test_from_cache(self):
         """
