@@ -138,7 +138,10 @@ class Decorator(object):
 
     def __call__(self, f):
         self.to_wrap = f
-        g = wraps(f)(self.get_wrapped_object())
+        if inspect.isclass(f):
+            g = self.get_wrapped_object()
+        else:
+            g = wraps(f)(self.get_wrapped_object())
 
         return g
 

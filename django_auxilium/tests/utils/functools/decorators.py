@@ -52,7 +52,6 @@ class DecoratorTest(TestCase):
             d.validate_parameter_config()
 
         d.DEFAULTS = {'bar': None}
-        m = 'Optional parameter before required parameter'
         self.assertEqual(d.validate_parameter_config(), None)
 
     def test_get_parameters(self):
@@ -156,6 +155,18 @@ class DecoratorTest(TestCase):
 
         self.assertEqual(f(), g())
         self.assertEqual(f, d.to_wrap)
+
+    def test_wrapping_classes(self):
+        """
+        Python's ``functools.wraps`` can't wrap classes. This method tests how classes
+        are wrapped.
+        """
+        class Foo(object):
+            pass
+
+        d = Decorator.to_decorator()
+        d(Foo)
+        self.assertTrue(True)
 
 
 class HybridDecoratorTest(TestCase):
