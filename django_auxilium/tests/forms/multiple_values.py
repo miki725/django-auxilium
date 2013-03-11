@@ -1,3 +1,4 @@
+import re
 from django import forms
 from django.test import TestCase
 from django_auxilium.forms.multiple_values import MultipleValuesField
@@ -17,6 +18,12 @@ class MultipleValuesField_Test(TestCase):
             form = MultipleValuesField(delimiter=i)
             value = i.join(data)
             self.assertListEqual(form.clean(value), data)
+
+        delimiter = re.compile('\W+')
+        data = 'hello world, how  are you?'
+        expected = ['hello', 'world', 'how', 'are', 'you']
+        form = MultipleValuesField(delimiter=delimiter)
+        self.assertListEqual(form.clean(data), expected)
 
     def test_mapping(self):
         mapping = {
