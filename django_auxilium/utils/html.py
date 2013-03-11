@@ -11,7 +11,7 @@ RE_NEWLINE = re.compile(r"\n")
 def simple_minify(html):
     html = strip_spaces_between_tags(html.strip())
     html = RE_MULTISPACE.sub(' ', html)
-    html = RE_NEWLINE.sub('', html)
+    html = RE_NEWLINE.sub(' ', html)
     return html
 
 
