@@ -3,8 +3,9 @@ Collection of simple abstract base models with a few additional attributes
 which don't require much logic.
 """
 
-from django.db import models
+from django.db import models, IntegrityError
 from django.contrib.auth.models import User
+from uuid import uuid4
 
 
 class BaseModel(models.Model):
@@ -70,3 +71,30 @@ class TitleDescriptionModel(BaseModel):
 
     class Meta:
         abstract = True
+
+    def __unicode__(self):
+        return self.title
+
+
+class UUIDModel(models.Model):
+    uuid = models.CharField(max_length=32, blank=True, unique=True)
+
+    class Meta:
+        abstract = True
+
+    def generate_uuid(self, force=False):
+        if not self.uuid or force:
+            self.uuid = uuid4().get_hex()
+
+    def save(self, *args, **kwargs):
+        if not self.uuid:
+            self.generate_uuid()
+
+        if kwargs.pop('assure_unique_uuid', True):
+            while True:
+                try:
+                    return super(UUIDModel, self).save(*args, **kwargs)
+                except IntegrityError:
+                    self.generate_uuid(True)
+        else:
+            return super(UUIDModel, self).save(*args, **kwargs)
