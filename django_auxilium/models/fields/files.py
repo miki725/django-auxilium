@@ -5,101 +5,96 @@ Collection of Django custom model field which have something to do with files
 import os
 from functools import wraps
 from uuid import uuid4
-from django.db.models import FileField
+from django.db import models
 
 
-class RandomFileField(FileField):
+def random_filename_upload_to(path):
     """
-    Class which implements custom behaviour for ``upload_to`` paramater
-    for Django ``FileField`` model field. It makes sure that the uploaded file
-    will be given a random filename when saved. This enhances security and tries
-    to avoid any possible filename conflicts. This class inherits from Django
-    standard ``FileField``.
+    Get ``upload_to`` compliant method which will always return a random filename.
+
+    This method can be used as Django's ``FileField`` ``upload_to`` parameter.
+    It returns an ``upload_to`` callable which will make sure the filename will always
+    be random. This method also accepts a ``path`` parameter which will define where
+    relative to the media folder, the file will be stored.
 
     Parameters
     ----------
-    upload_to : str
-        Path where the uploaded file should be uploaded to
+    path : str
+        The path relative to ``media`` where the filaname should be uploaded to
+
+    Returns
+    -------
+    upload_to : function
+        Django ``FileField``'s ``upload_to`` compliant function
     """
-    def __init__(self, *args, **kwargs):
-        kwargs['upload_to'] = self.upload_to(kwargs['upload_to'])
 
-        super(RandomFileField, self).__init__(*args, **kwargs)
+    def f(instance, filename):
+        ext = filename.split('.')[-1]
+        filename = '{}.{}'.format(uuid4().hex, ext)
+        return os.path.join(path, filename)
 
-    def upload_to(self, path):
-        """
-        Get the method which will be passed to ``upload_to`` argument to
-        Django ``FileField``. This method will make sure the uploaded
-        files will have a random filename.
-
-        Parameters
-        ----------
-        path : str
-            The path relative to ``media`` where the filaname should be uploaded to
-
-        Returns
-        -------
-        upload_to : def
-            Function following Django ``FileField`` ``upload_to`` parameter which
-            will retun a random path where the file should be saved to.
-        """
-        @wraps(self.upload_to)
-        def f(instance, filename):
-            ext = filename.split('.')[-1]
-            filename = '{}.{}'.format(uuid4().hex, ext)
-            return os.path.join(path, filename)
-
-        return f
+    return f
 
 
-class OriginalFilenameRandomFileField(RandomFileField):
+def original_random_filename_upload_to(path, filename_field):
     """
-    Class which implements custom behaviour for ``upload_to`` paramater
-    for Django ``FileField`` model field. It makes sure that the uploaded file
-    will be given a random filename when saved. Unlike ``RandomFileField``, this
-    class' implementation saves the original filename in the models field as
-    specified in ``filename_field`` parameter. Having random filename enhances
-    security and tries to avoid any possible filename conflicts.
-    This class inherits from ``RandomFileField``.
+    Get ``upload_to`` compliant method which will always return a random filename
+    however will also store the original filename in the model.
 
     Parameters
     ----------
-    upload_to : str
-        Path where the uploaded file should be uploaded to
-    filename_field : str, optional
-        Field name of Django model where the original filename should be saved
+    path : str
+        The path relative to ``media`` where the filaname should be uploaded to
+    filename_field : str
+        The name of the model attribute to which the original filename should be stored.
 
-        .. note:: The model field **must** be defined below the file field.
+    Returns
+    -------
+    upload_to : function
+        Django ``FileField``'s ``upload_to`` compliant function
     """
-    def __init__(self, *args, **kwargs):
+    g = random_filename_upload_to(path)
+
+    def f(instance, filename):
+        setattr(instance, filename_field, filename)
+        return g(instance, filename)
+
+    return f
+
+
+class RandomFileFieldMeta(object):
+    @staticmethod
+    def random_init(self, *args, **kwargs):
+        # kwargs['upload_to'] = random_filename_upload_to(kwargs['upload_to'])
+
+        print super(self.__class__, self).__init__
+        super(self.__class__, self).__init__(*args, **kwargs)
+
+    @staticmethod
+    def original_random_init(self, *args, **kwargs):
         filename_field = kwargs.pop('filename_field', 'filename')
-        kwargs['upload_to'] = self.upload_to(kwargs['upload_to'], filename_field)
+        kwargs['upload_to'] = original_random_filename_upload_to(kwargs['upload_to'],
+                                                                 filename_field)
 
-        FileField.__init__(self, *args, **kwargs)
+        super(self.__class__, self).__init__(*args, **kwargs)
 
-    def upload_to(self, path, filename_field):
-        """
-        Get the method which will be passed to ``upload_to`` argument to
-        Django ``FileField``. This method will make sure the uploaded
-        files will have a random filename. Also it will save the original
-        filename in the specified model field.
 
-        Parameters
-        ----------
-        path : str
-            The path relative to ``media`` where the filaname should be uploaded to
+RandomFileField = \
+    type('RandomFileField',
+         (models.FileField,),
+         {'__init__': RandomFileFieldMeta.random_init})
 
-        Returns
-        -------
-        upload_to : def
-            Function following Django ``FileField`` ``upload_to`` parameter which
-            will retun a random path where the file should be saved to.
-        """
-        g = super(OriginalFilenameRandomFileField, self).upload_to(path)
+OriginalFilenameRandomFileField = \
+    type('OriginalFilenameRandomFileField',
+         (models.FileField,),
+         {'__init__': RandomFileFieldMeta.original_random_init})
 
-        @wraps(self.upload_to)
-        def f(instance, filename):
-            setattr(instance, filename_field, filename)
-            return g(instance, filename)
+RandomImageField = \
+    type('RandomImageField',
+         (models.ImageField,),
+         {'__init__': RandomFileFieldMeta.random_init})
 
-        return f
+OriginalFilenameRandomImageField = \
+    type('OriginalFilenameRandomImageField',
+         (models.ImageField,),
+         {'__init__': RandomFileFieldMeta.original_random_init})
