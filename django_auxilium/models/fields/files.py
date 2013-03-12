@@ -3,9 +3,13 @@ Collection of Django custom model field which have something to do with files
 """
 
 import os
-from functools import wraps
 from uuid import uuid4
 from django.db import models
+
+try:
+    from south.modelsinspector import add_introspection_rules
+except ImportError:
+    add_introspection_rules = None
 
 
 def random_filename_upload_to(path):
@@ -65,16 +69,17 @@ def original_random_filename_upload_to(path, filename_field):
 class RandomFileFieldMeta(object):
     @staticmethod
     def random_init(self, *args, **kwargs):
-        # kwargs['upload_to'] = random_filename_upload_to(kwargs['upload_to'])
+        self.upload_to_path = kwargs['upload_to']
+        kwargs['upload_to'] = random_filename_upload_to(kwargs['upload_to'])
 
-        print super(self.__class__, self).__init__
         super(self.__class__, self).__init__(*args, **kwargs)
 
     @staticmethod
     def original_random_init(self, *args, **kwargs):
-        filename_field = kwargs.pop('filename_field', 'filename')
+        self.filename_field = kwargs.pop('filename_field', 'filename')
+        self.upload_to_path = kwargs['upload_to']
         kwargs['upload_to'] = original_random_filename_upload_to(kwargs['upload_to'],
-                                                                 filename_field)
+                                                                 self.filename_field)
 
         super(self.__class__, self).__init__(*args, **kwargs)
 
@@ -98,3 +103,27 @@ OriginalFilenameRandomImageField = \
     type('OriginalFilenameRandomImageField',
          (models.ImageField,),
          {'__init__': RandomFileFieldMeta.original_random_init})
+
+if add_introspection_rules:
+    suffix = 'Random(?:File|Image)Field'
+    add_introspection_rules(
+        [
+            (
+                (RandomFileField, RandomImageField),
+                (),
+                {'upload_to': ('upload_to_path', {})}
+            ),
+            (
+                (OriginalFilenameRandomFileField, OriginalFilenameRandomImageField),
+                (),
+                {
+                    'upload_to': ('upload_to_path', {}),
+                    'filename_field': ('filename_field', {'default': 'filename'})
+                }
+            ),
+        ],
+        [
+            '^django_auxilium\.models\.fields\.files\.'
+            '(?:OriginalFilename)?{}'.format(suffix)
+        ]
+    )
