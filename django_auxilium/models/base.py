@@ -8,20 +8,41 @@ from django.contrib.auth.models import User
 from uuid import uuid4
 
 
-class BaseModel(models.Model):
+class CreatedModel(models.Model):
     """
-    This model adds date created and last date modified attributes
+    This model adds date created attribute
 
     Attributes
     ----------
     created : DateTime
         The datetime when the model instance is created
+    """
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta(object):
+        abstract = True
+
+
+class ModifiedModel(models.Model):
+    """
+    This model adds the last date modified attribute
+
+    Attributes
+    ----------
     modified : DateTime
         The datetime when the model was last modified and saved
     """
-
-    created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now_add=True, auto_now=True)
+
+    class Meta(object):
+        abstract = True
+
+
+class BaseModel(CreatedModel, ModifiedModel):
+    """
+    This model adds date created and last date modified attributes.
+    Inherits from ``CreatedModel`` and ``ModifiedModel``.
+    """
 
     class Meta(object):
         abstract = True
