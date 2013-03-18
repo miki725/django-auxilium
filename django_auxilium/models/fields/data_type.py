@@ -1,15 +1,21 @@
 import json
+import types
 from django.db import models
+
+try:
+    from south.modelsinspector import add_introspection_rules
+except ImportError:
+    add_introspection_rules = None
 
 
 class DataType(object):
     SUPPORTED_TYPES = {
-        u'unicode': unicode,
-        u'str': str,
-        u'bool': bool,
-        u'int': int,
-        u'float': float,
-        u'list': list,
+        'unicode': unicode,
+        'str': str,
+        'bool': bool,
+        'int': int,
+        'float': float,
+        'list': list,
     }
     INVERSE_SUPPORTED_TYPES = dict(zip(SUPPORTED_TYPES.values(), SUPPORTED_TYPES.keys()))
     TYPE_CHOICES = zip(SUPPORTED_TYPES.keys(), SUPPORTED_TYPES.keys())
@@ -20,35 +26,53 @@ class DataType(object):
 
         t_datatype = type(datatype)
 
-        if t_datatype in [str, unicode]:
+        if t_datatype is DataType:
+            self.datatype = datatype.datatype
+
+        elif t_datatype in [str, unicode] and datatype in self.SUPPORTED_TYPES.keys():
             self.datatype = self.SUPPORTED_TYPES[datatype]
 
         elif t_datatype is type and datatype in self.INVERSE_SUPPORTED_TYPES.keys():
             self.datatype = datatype
 
-        elif t_datatype is DataType:
-            self.datatype = datatype.datatype
-
         else:
             raise TypeError('Unsupported {}'.format(str(t_datatype)))
+
+    def get_custom_method(self, direction):
+        method_name = '{}_{}'.format(direction,
+                                     self.INVERSE_SUPPORTED_TYPES[self.datatype])
+
+        if hasattr(self, method_name) and callable(getattr(self, method_name)):
+            return getattr(self, method_name)
+        else:
+            return None
+
+    def encode_list(self, value):
+        return json.dumps(value)
 
     def encode(self, value):
         if value is None:
             return None
 
-        if self.datatype is list:
-            return json.dumps(value)
+        method = self.get_custom_method('encode')
+        if method:
+            return method(value)
         else:
             return unicode(value)
+
+    def decode_list(self, value):
+        return json.loads(value)
+
+    def decode_bool(self, value):
+        return True if value == 'True' else False
 
     def decode(self, value, *args, **kwargs):
         if value is None:
             return None
 
-        if self.datatype is list:
-            return json.loads(value)
-        elif self.datatype is bool:
-            return True if value == 'True' else False
+        method = self.get_custom_method('decode')
+        if method:
+            return method(value)
         else:
             return self.datatype(value, *args, **kwargs)
 
@@ -67,24 +91,31 @@ class DataType(object):
 
         return self.decode(*args, **kwargs)
 
+    def __eq__(self, other):
+        if not isinstance(other, DataType):
+            return False
+
+        return self.datatype == other.datatype
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class DataTypeField(models.CharField):
     __metaclass__ = models.SubfieldBase
-    description = 'Field for storing python data-types in db with capability to get the data-type back'
+    description = 'Field for storing Python data-type primitives in the db'
 
     def __init__(self, **kwargs):
-        defaults = {}
-        overwrites = {
+        defaults = {
             'max_length': 32,
             'choices': DataType.TYPE_CHOICES,
             'default': u'unicode'
         }
         defaults.update(kwargs)
-        defaults.update(overwrites)
-        super(DataTypeField, self).__init__(**overwrites)
+        super(DataTypeField, self).__init__(**defaults)
 
     def to_python(self, value):
-        if value is type(None):
+        if isinstance(value, types.NoneType):
             return DataType()
 
         return DataType(value)
@@ -101,6 +132,16 @@ class DataTypeField(models.CharField):
         return super(DataTypeField, self).validate(value, model_instance)
 
 
-class ValueDataTypeField(models.TextField):
-    def pre_save(self, model_instance, add):
-        return model_instance.__dict__.get(self.attname)
+if add_introspection_rules:
+    add_introspection_rules(
+        [
+            (
+                (DataTypeField,),
+                (),
+                {}
+            ),
+        ],
+        [
+            '^django_auxilium\.models\.fields\.data_type\.DataTypeField'
+        ]
+    )
