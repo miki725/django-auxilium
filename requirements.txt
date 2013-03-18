@@ -2,3 +2,4 @@ coverage
 django
 django-nose
 mock
+south
