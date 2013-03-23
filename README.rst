@@ -2,6 +2,10 @@
 Django Auxilium
 ===============
 
+.. image:: https://travis-ci.org/miki725/django-auxilium.png?branch=develop
+    :target: https://travis-ci.org/miki725/django-auxilium
+    :alt: Build Status
+
 About
 =====
 
