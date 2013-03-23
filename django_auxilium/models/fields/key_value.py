@@ -1,11 +1,11 @@
 from __future__ import unicode_literals, print_function
 from django.db import models
-from .data_type import DataType, DataTypeField
+from .data_type import DataType, DataTypeField as _DataTypeField
 
 try:
-    from south.modelsinspector import add_introspection_rules
+    from south.modelsinspector import add_introspection_rules, add_ignored_fields
 except ImportError:
-    add_introspection_rules = None
+    add_introspection_rules = add_ignored_fields = None
 
 
 class ValueDescriptor(object):
@@ -39,6 +39,10 @@ class ValueDescriptor(object):
             value = datatype.decode(value)
 
         setattr(instance, self.value_attribute, value)
+
+
+class DataTypeField(_DataTypeField):
+    pass
 
 
 class ValueDataTypeField(models.TextField):
@@ -103,3 +107,6 @@ if add_introspection_rules:
             '^django_auxilium\.models\.fields\.key_value\.ValueDataTypeField'
         ]
     )
+    add_ignored_fields([
+        '^django_auxilium\.models\.fields\.key_value\.DataTypeField'
+    ])
