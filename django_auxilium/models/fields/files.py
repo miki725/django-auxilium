@@ -2,6 +2,7 @@
 Collection of Django custom model field which have something to do with files
 """
 
+from __future__ import unicode_literals, print_function
 import os
 from uuid import uuid4
 from django.db import models
@@ -85,22 +86,22 @@ class RandomFileFieldMeta(object):
 
 
 RandomFileField = \
-    type('RandomFileField',
+    type(str('RandomFileField'),
          (models.FileField,),
          {'__init__': RandomFileFieldMeta.random_init})
 
 OriginalFilenameRandomFileField = \
-    type('OriginalFilenameRandomFileField',
+    type(str('OriginalFilenameRandomFileField'),
          (models.FileField,),
          {'__init__': RandomFileFieldMeta.original_random_init})
 
 RandomImageField = \
-    type('RandomImageField',
+    type(str('RandomImageField'),
          (models.ImageField,),
          {'__init__': RandomFileFieldMeta.random_init})
 
 OriginalFilenameRandomImageField = \
-    type('OriginalFilenameRandomImageField',
+    type(str('OriginalFilenameRandomImageField'),
          (models.ImageField,),
          {'__init__': RandomFileFieldMeta.original_random_init})
 

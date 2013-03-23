@@ -1,3 +1,4 @@
+from __future__ import unicode_literals, print_function
 from django import forms
 from django.core.validators import EMPTY_VALUES
 from django.utils.translation import ugettext_lazy as _
@@ -20,11 +21,11 @@ class RangeSelector(forms.CharField):
     """
 
     default_error_messages = {
-        "invalid": _(u"Invalid range value."),
-        "values": _(u"Top-left coordinate must be first."),
-        "max_rows": _(u"Too many rows selected. Maximum is {}."),
-        "max_cols": _(u"Too many columns selected. Maximum is {}."),
-        "max_either": _(u"Too many rows or columns selected. Maximum is {}."),
+        "invalid": _("Invalid range value."),
+        "values": _("Top-left coordinate must be first."),
+        "max_rows": _("Too many rows selected. Maximum is {}."),
+        "max_cols": _("Too many columns selected. Maximum is {}."),
+        "max_either": _("Too many rows or columns selected. Maximum is {}."),
     }
 
     def __init__(self, *args, **kwargs):

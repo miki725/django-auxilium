@@ -1,3 +1,4 @@
+from __future__ import unicode_literals, print_function
 import inspect
 from django.db import models
 from django_auxilium.utils.functools import Decorator, cache

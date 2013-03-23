@@ -1,3 +1,4 @@
+from __future__ import unicode_literals, print_function
 import re
 from django import forms
 from django.core.validators import EMPTY_VALUES
@@ -10,7 +11,7 @@ class ColorSelector(forms.CharField):
     """
 
     default_error_messages = {
-        "invalid": _(u"Invalid color value."),
+        "invalid": _("Invalid color value."),
     }
 
     def __init__(self, *args, **kwargs):

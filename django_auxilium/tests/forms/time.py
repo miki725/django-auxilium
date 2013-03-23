@@ -1,3 +1,4 @@
+from __future__ import unicode_literals, print_function
 from django import forms
 from django.core.validators import EMPTY_VALUES
 from django.test import TestCase

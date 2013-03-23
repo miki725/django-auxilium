@@ -1,3 +1,4 @@
+from __future__ import unicode_literals, print_function
 from django import forms
 from django.test import TestCase
 from django_auxilium.forms.color import ColorSelector

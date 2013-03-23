@@ -3,6 +3,7 @@ Collection of simple abstract base models with a few additional attributes
 which don't require much logic.
 """
 
+from __future__ import unicode_literals, print_function
 from django.db import models, IntegrityError
 from django.contrib.auth.models import User
 from uuid import uuid4

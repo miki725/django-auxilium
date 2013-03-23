@@ -1,5 +1,6 @@
+from __future__ import unicode_literals, print_function
 from django.db import models
-from data_type import DataType, DataTypeField
+from .data_type import DataType, DataTypeField
 
 try:
     from south.modelsinspector import add_introspection_rules
@@ -45,7 +46,7 @@ class ValueDataTypeField(models.TextField):
         self.datatype_field = kwargs.pop('datatype_field')
 
         defaults = {
-            'default': u'',
+            'default': '',
         }
         defaults.update(kwargs)
 

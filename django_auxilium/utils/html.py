@@ -1,8 +1,13 @@
+from __future__ import unicode_literals, print_function
 import re
 from django.utils.html import strip_spaces_between_tags
-from HTMLParser import HTMLParser
-import htmlentitydefs
 
+try:                 # Python 2
+    import htmlentitydefs
+    from HTMLParser import HTMLParser
+except ImportError:  # Python 3
+    from html import entities as htmlentitydefs
+    from html.parser import HTMLParser
 
 EXCLUDE_TAGS = ('textarea', 'pre', 'code', 'script',)
 RE_WHITESPACE = re.compile(r'\s{2,}|\n')
@@ -45,7 +50,6 @@ def simple_minify(html):
     html = strip_spaces_between_tags(html)
     components = RE_EXCLUDE_TAGS.split(html)
     html = ''
-    print len(components)
     for i, component in enumerate(components):
         if i % 2 == 0:
             component = RE_WHITESPACE.sub(' ', component)
@@ -62,7 +66,7 @@ class HTMLTextExtractor(HTMLParser):
         self.result.append(d)
 
     def handle_charref(self, number):
-        codepoint = int(number[1:], 16) if number[0] in (u'x', u'X') else int(number)
+        codepoint = int(number[1:], 16) if number[0] in ('x', 'X') else int(number)
         self.result.append(unichr(codepoint))
 
     def handle_entityref(self, name):
@@ -70,7 +74,7 @@ class HTMLTextExtractor(HTMLParser):
         self.result.append(unichr(codepoint))
 
     def get_text(self):
-        return u''.join(self.result)
+        return ''.join(self.result)
 
 
 def html_to_text(html):

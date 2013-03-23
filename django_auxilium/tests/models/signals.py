@@ -1,3 +1,4 @@
+from __future__ import unicode_literals, print_function
 from django.db import models
 from django.test import TestCase
 from mock import MagicMock, call, patch
@@ -90,9 +91,12 @@ class TestFileFieldAutoDelete(TestCase):
         self.assertEqual(mock.mock_calls[-1], call.file_field.delete(save=False))
         self.assertIn(call.file_field.delete(save=False), mock.mock_calls)
 
-        # file_field not there as returned by __nonzer__() == 0
+        # file_field not there as returned by __nonzero__() == 0
         mock = MagicMock()
-        mock.file_field.__nonzero__.return_value = 0
+        try:
+            mock.file_field.__nonzero__.return_value = 0   # Python 2
+        except AttributeError:
+            mock.file_field.__bool__.return_value = False  # Python 3
         a(None, mock)
         self.assertLessEqual(len(mock.mock_calls), 1)
         self.assertNotIn(call.file_field.delete(save=False), mock.mock_calls)

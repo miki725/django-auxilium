@@ -1,3 +1,4 @@
+from __future__ import unicode_literals, print_function
 import re
 from django import forms
 from django.core.validators import EMPTY_VALUES
@@ -50,13 +51,13 @@ class MultipleValuesField(forms.CharField):
         encountered, a ``ValidationError`` will be raised.
     """
     default_error_messages = {
-        'max_values': _(u'More values than allowed. Entered {} and allowed {}.'),
-        'min_values': _(u'More values are necessary. Entered {} and need at least {}.'),
-        'invalid_value': _(u'{} {} an invalid value.'),
+        'max_values': _('More values than allowed. Entered {} and allowed {}.'),
+        'min_values': _('More values are necessary. Entered {} and need at least {}.'),
+        'invalid_value': _('{} {} an invalid value.'),
     }
 
     def __init__(self,
-                 delimiter=u',',
+                 delimiter=',',
                  mapping=None,
                  max_values=None,
                  min_values=None,

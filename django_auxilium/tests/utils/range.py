@@ -1,3 +1,4 @@
+from __future__ import unicode_literals, print_function
 import random
 from django.test import TestCase
 from django_auxilium.utils.range import AlphabeticNumbers

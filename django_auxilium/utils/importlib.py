@@ -2,6 +2,7 @@
 Collection of utilities which help in importing things in Python
 """
 
+from __future__ import unicode_literals, print_function
 from django.utils import importlib
 
 

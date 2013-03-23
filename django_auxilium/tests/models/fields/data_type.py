@@ -1,4 +1,6 @@
+from __future__ import unicode_literals, print_function
 import json
+import six
 from django.test import TestCase
 from django_auxilium.models.fields.data_type import DataType
 from mock import MagicMock, call
@@ -8,7 +10,7 @@ from random import randrange
 class TestDataType(TestCase):
     def test_init(self):
         d = DataType()
-        self.assertEqual(d.datatype, unicode)
+        self.assertEqual(d.datatype, six.text_type)
 
         for k, t in DataType.SUPPORTED_TYPES.items():
             d = DataType(k)
@@ -27,7 +29,7 @@ class TestDataType(TestCase):
             'encode': ('list',),
             'decode': ('list', 'bool'),
         }
-        non_existing = ('unicode', 'int', 'float')
+        non_existing = ('text', 'int', 'float')
 
         dt = DataType()
 
@@ -37,9 +39,10 @@ class TestDataType(TestCase):
                 self.assertEqual(dt.get_custom_method(d),
                                  getattr(dt, '{}_{}'.format(d, m)))
 
-        for m in non_existing:
-            dt.datatype = DataType.SUPPORTED_TYPES[m]
-            self.assertIsNone(dt.get_custom_method(d))
+        for d in ['encode', 'decode']:
+            for m in non_existing:
+                dt.datatype = DataType.SUPPORTED_TYPES[m]
+                self.assertIsNone(dt.get_custom_method(d))
 
     def test_encode_list(self):
         data = [randrange(0, 1000) for i in range(20)]
@@ -50,11 +53,10 @@ class TestDataType(TestCase):
 
     def test_encode(self):
         data = {
-            'unicode': (u'foo', u'foo'),
-            'str': ('foo', u'foo'),
+            'text': ('foo', 'foo'),
             'bool': (False, 'False'),
-            'int': (5, u'5'),
-            'float': (5.0, u'5.0'),
+            'int': (5, '5'),
+            'float': (5.0, '5.0'),
             'list': (['foo', 'bar'], json.dumps(['foo', 'bar'])),
         }
 
@@ -86,16 +88,14 @@ class TestDataType(TestCase):
         dt = DataType('bool')
 
         for d, e in zip(data, expected):
-            print dt.get_custom_method('decode')
             self.assertEqual(dt.decode_bool(d), e)
 
     def test_decode(self):
         data = {
-            'unicode': (u'foo', u'foo'),
-            'str': (u'foo', 'foo'),
+            'text': ('foo', 'foo'),
             'bool': ('False', False),
-            'int': (u'5', 5),
-            'float': (u'5.0', 5.0),
+            'int': ('5', 5),
+            'float': ('5.0', 5.0),
             'list': (json.dumps(['foo', 'bar']), ['foo', 'bar']),
         }
 
@@ -114,15 +114,10 @@ class TestDataType(TestCase):
             self.assertGreater(len(m.mock_calls), 0)
             self.assertEqual(m.mock_calls[-1], call()(value))
 
-    def test_unicode(self):
-        for d in DataType.SUPPORTED_TYPES.keys():
-            dt = DataType(d)
-            self.assertEqual(dt.__unicode__(), d)
-
     def test_str(self):
         for d in DataType.SUPPORTED_TYPES.keys():
             dt = DataType(d)
-            self.assertEqual(dt.__str__(), d)
+            self.assertEqual(six.text_type(dt), d)
 
     def test_len(self):
         for d in DataType.SUPPORTED_TYPES.keys():
@@ -130,7 +125,7 @@ class TestDataType(TestCase):
             self.assertEqual(dt.__len__(), len(d))
 
     def test_call(self):
-        types = ('unicode', 'str', 'bool', 'int', 'float', 'list',)
+        types = ('text', 'bool', 'int', 'float', 'list',)
 
         for t in types:
             dt = DataType(t)
@@ -144,5 +139,4 @@ class TestDataType(TestCase):
             m = MagicMock()
             dt.decode = m
             self.assertNotEqual(dt('foo'), t)
-            print m.mock_calls
             self.assertEqual(m.mock_calls[0], call('foo'))

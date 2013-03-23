@@ -1,3 +1,4 @@
+from __future__ import unicode_literals, print_function
 from functools import WRAPPER_ASSIGNMENTS
 from django.test import TestCase
 from django_auxilium.utils.functools.decorators import (Decorator, HybridDecorator,

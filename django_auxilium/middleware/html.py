@@ -1,4 +1,4 @@
-import re
+from __future__ import unicode_literals, print_function
 from django.conf import settings
 from django.core.exceptions import MiddlewareNotUsed
 from django_auxilium.utils.html import simple_minify

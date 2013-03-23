@@ -1,3 +1,6 @@
+from __future__ import unicode_literals, print_function
+
+
 class AlphabeticNumbers(object):
     """
     Utility class for dealing with numbers in alphabetical form. Useful for converting
@@ -66,10 +69,10 @@ class AlphabeticNumbers(object):
             remainder = number % 26
             if not remainder:
                 string += 'Z'
-                number = number / 26 - 1
+                number = number // 26 - 1
             else:
                 string += chr(remainder + 64)
-                number /= 26
+                number //= 26
             if number < 1:
                 break
 

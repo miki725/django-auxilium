@@ -1,71 +1,200 @@
 """
 lazy - Decorators and utilities for lazy evaluation in Python
-Alberto Bertogli (albertito@blitiri.com.ar) [http://blitiri.com.ar/git/r/pymisc/b/master/t/f=lazy.py.html]
+
+The list of special methods is compiled from
+http://code.activestate.com/recipes/496741-object-proxying/
 """
 
-from functools import wraps
+from __future__ import unicode_literals, print_function
+from django.utils.functional import Promise
+from django_auxilium.utils.functools import Decorator
+import six
 
 
-class _LazyWrapper:
+SPECIAL_METHODS = [
+    '__abs__',
+    '__add__',
+    '__and__',
+    '__call__',
+    '__cmp__',
+    '__coerce__',
+    '__contains__',
+    '__delitem__',
+    '__delslice__',
+    '__div__',
+    '__divmod__',
+    '__eq__',
+    '__float__',
+    '__floordiv__',
+    '__ge__',
+    '__getitem__',
+    '__getslice__',
+    '__gt__',
+    '__hash__',
+    '__hex__',
+    '__iadd__',
+    '__iand__',
+    '__idiv__',
+    '__idivmod__',
+    '__ifloordiv__',
+    '__ilshift__',
+    '__imod__',
+    '__imul__',
+    '__int__',
+    '__invert__',
+    '__ior__',
+    '__ipow__',
+    '__irshift__',
+    '__isub__',
+    '__iter__',
+    '__itruediv__',
+    '__ixor__',
+    '__le__',
+    '__len__',
+    '__long__',
+    '__lshift__',
+    '__lt__',
+    '__mod__',
+    '__mul__',
+    '__ne__',
+    '__neg__',
+    '__oct__',
+    '__or__',
+    '__pos__',
+    '__pow__',
+    '__radd__',
+    '__rand__',
+    '__rdiv__',
+    '__rdivmod__',
+    '__reduce__',
+    '__reduce_ex__',
+    '__repr__',
+    '__reversed__',
+    '__rfloorfiv__',
+    '__rlshift__',
+    '__rmod__',
+    '__rmul__',
+    '__ror__',
+    '__rpow__',
+    '__rrshift__',
+    '__rshift__',
+    '__rsub__',
+    '__rtruediv__',
+    '__rxor__',
+    '__setitem__',
+    '__setslice__',
+    '__str__',
+    '__sub__',
+    '__truediv__',
+    '__unicode__',
+    '__xor__',
+    'next',
+]
+
+
+class LazyWrapper(Promise):
     """
-    Lazy wrapper class for the decorator defined below.
-    It's closely related so don't use it.
-
-    We don't use a new-style class, otherwise we would have to implement
-    stub methods for __getattribute__, __hash__ and lots of others that
-    are inherited from object by default. This works too and is simple.
-    I'll deal with them when they become mandatory.
+    Wrapper class for lazy objects as returned by the lazy decorator below.
     """
-    def __init__(self, f, args, kwargs):
-        self._override = True
-        self._isset = False
-        self._value = None
-        self._func = f
-        self._args = args
-        self._kwargs = kwargs
-        self._override = False
 
-    def _checkset(self):
-        if not self._isset:
-            self._override = True
-            self._value = self._func(*self._args, **self._kwargs)
-            self._isset = True
-            self._checkset = lambda: True
-            self._override = False
+    def __init__(self, pt, f, args, kwargs):
+        self._lazy_func = f
+        self._lazy_args = args
+        self._lazy_kwargs = kwargs
+        self._lazy_computed = False
+        self._lazy_value = None
 
-    def __getattr__(self, name):
-        if self.__dict__['_override']:
-            return self.__dict__[name]
-        self._checkset()
-        return self._value.__getattribute__(name)
+    def _lazy_compute(self):
+        if not self._lazy_computed:
+            self._lazy_value = self._lazy_func(*self._lazy_args, **self._lazy_kwargs)
+            self._lazy_computed = True
+            self._lazy_compute = lambda: True
+
+    def __getattribute__(self, name):
+        get = lambda x: object.__getattribute__(self, x)
+
+        # retrieve lazy attributes as normal
+        if name.startswith('_lazy_'):
+            return get(name)
+
+        # get the attribute from the computed value
+        get('_lazy_compute')()
+        return get('_lazy_value').__getattribute__(name)
 
     def __setattr__(self, name, val):
-        if name == '_override' or self._override:
-            self.__dict__[name] = val
-            return
-        self._checkset()
-        setattr(self._value, name, val)
-        return
+        # set lazy attributes normally
+        if name.startswith('_lazy_'):
+            object.__setattr__(self, name, val)
+
+        else:
+            self._lazy_compute()
+            setattr(self._lazy_value, name, val)
+
+    @classmethod
+    def _lazy_proxy(cls, possible_types):
+        def make_method(name):
+            def method(self, *args, **kwargs):
+                self._lazy_compute()
+                return getattr(self._lazy_value, name)(*args, **kwargs)
+
+            method.__name__ = str(name)
+            return method
+
+        namespace = {}
+        for t in possible_types:
+            for name in SPECIAL_METHODS:
+                if hasattr(t, name) and name not in namespace:
+                    namespace[name] = make_method(name)
+
+        return type(str('{}({})'.format(cls.__name__,
+                                        '|'.join([i.__name__ for i in possible_types]))),
+                    (cls,), namespace)
+
+    def __new__(cls, possible_types, *args, **kwargs):
+        klass = cls._lazy_proxy(possible_types)
+        ins = object.__new__(klass)
+        klass.__init__(ins, possible_types, *args, **kwargs)
+        return ins
 
 
-def lazy(f):
+class LazyDecorator(Decorator):
     """
-    Lazy evaluation decorator
+    Lazy evaluation decorator.
 
-    Example usage:
+    Unfortunately in order to enable support for Python 3 in this decorator, this
+    decorator has required parameters as described in parameters section. Even though
+    that complicates the decorator's usage a bit however, it allows for support for
+    Python 3 which is a bigger advantage.
 
-    >>> @lazy
-    ... def a(bar):
-    ...   print "invoking a with {0}".format(bar)
-    ...   return bar + "foo"
+    Parameters
+    ----------
+    types : tuple, list
+        Iterable of possible output data-types of the output of the input function
 
-    >>> l = a("bar")
-    >>> print l
-    invoking a with bar
-    barfoo
+    Examples
+    --------
+
+    ::
+
+        >>> lazy = LazyDecorator.to_decorator()
+
+        >>> @lazy([six.text_type])
+        ... def a(bar):
+        ...   print("invoking a with {0}".format(bar))
+        ...   return bar + "foo"
+
+        >>> l = a("bar")
+        >>> print(l)
+        invoking a with bar
+        barfoo
     """
-    @wraps(f)
-    def newf(*args, **kwargs):
-        return _LazyWrapper(f, args, kwargs)
+    PARAMETERS = ('types',)
 
-    return newf
+    def get_wrapped_object(self):
+        def wrapper(*args, **kwargs):
+            return LazyWrapper(self.parameters['types'], self.to_wrap, args, kwargs)
+
+        return wrapper
+
+
+lazy = LazyDecorator.to_decorator()

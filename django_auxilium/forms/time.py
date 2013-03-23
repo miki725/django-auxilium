@@ -1,3 +1,4 @@
+from __future__ import unicode_literals, print_function
 import re
 from django import forms
 from django.core.validators import EMPTY_VALUES
@@ -6,7 +7,7 @@ from django.utils.translation import ugettext_lazy as _
 
 class TimeField(forms.CharField):
     default_error_messages = {
-        "invalid": _(u"Invalid time format"),
+        "invalid": _("Invalid time format"),
         }
 
     def to_python(self, value):
@@ -26,4 +27,4 @@ class TimeField(forms.CharField):
         minutes = result[1]
         ampm = result[2]
 
-        return u'{}:{} {}'.format(hour, minutes, ampm)
+        return '{}:{} {}'.format(hour, minutes, ampm)

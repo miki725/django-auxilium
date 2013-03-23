@@ -1,6 +1,9 @@
+from __future__ import unicode_literals, print_function
 import json
+import six
 import types
 from django.db import models
+from django.utils.encoding import python_2_unicode_compatible
 
 try:
     from south.modelsinspector import add_introspection_rules
@@ -8,10 +11,10 @@ except ImportError:
     add_introspection_rules = None
 
 
+@python_2_unicode_compatible
 class DataType(object):
     SUPPORTED_TYPES = {
-        'unicode': unicode,
-        'str': str,
+        'text': six.text_type,
         'bool': bool,
         'int': int,
         'float': float,
@@ -22,21 +25,22 @@ class DataType(object):
 
     def __init__(self, datatype=None):
         if not datatype:
-            datatype = unicode
+            datatype = six.text_type
 
         t_datatype = type(datatype)
+        is_text = isinstance(datatype, six.string_types)
 
         if t_datatype is DataType:
             self.datatype = datatype.datatype
 
-        elif t_datatype in [str, unicode] and datatype in self.SUPPORTED_TYPES.keys():
+        elif is_text and datatype in self.SUPPORTED_TYPES.keys():
             self.datatype = self.SUPPORTED_TYPES[datatype]
 
         elif t_datatype is type and datatype in self.INVERSE_SUPPORTED_TYPES.keys():
             self.datatype = datatype
 
         else:
-            raise TypeError('Unsupported {}'.format(str(t_datatype)))
+            raise TypeError('Unsupported {}'.format(six.text_type(t_datatype)))
 
     def get_custom_method(self, direction):
         method_name = '{}_{}'.format(direction,
@@ -58,7 +62,7 @@ class DataType(object):
         if method:
             return method(value)
         else:
-            return unicode(value)
+            return six.text_type(value)
 
     def decode_list(self, value):
         return json.loads(value)
@@ -76,18 +80,15 @@ class DataType(object):
         else:
             return self.datatype(value, *args, **kwargs)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.INVERSE_SUPPORTED_TYPES[self.datatype]
 
-    def __str__(self):
-        return str(self.__unicode__())
-
     def __len__(self):
-        return len(self.__unicode__())
+        return len(six.text_type(self))
 
     def __call__(self, *args, **kwargs):
         if not args and not kwargs:
-            return self.__unicode__()
+            return six.text_type(self)
 
         return self.decode(*args, **kwargs)
 
@@ -101,15 +102,15 @@ class DataType(object):
         return not self.__eq__(other)
 
 
-class DataTypeField(models.CharField):
-    __metaclass__ = models.SubfieldBase
+class DataTypeField(six.with_metaclass(models.SubfieldBase,
+                                       models.CharField)):
     description = 'Field for storing Python data-type primitives in the db'
 
     def __init__(self, **kwargs):
         defaults = {
             'max_length': 32,
             'choices': DataType.TYPE_CHOICES,
-            'default': u'unicode'
+            'default': 'text'
         }
         defaults.update(kwargs)
         super(DataTypeField, self).__init__(**defaults)

@@ -1,3 +1,4 @@
+from __future__ import unicode_literals, print_function
 import re
 from django import forms
 from django.test import TestCase

@@ -2,6 +2,7 @@
 Collection of simple utilities which modify some behaviour of funtions
 """
 
+from __future__ import unicode_literals, print_function
 import copy
 import inspect
 import re
@@ -58,9 +59,9 @@ class Decorator(object):
         ...     DEFAULTS = {'debug': False}
         ...     def get_wrapped_object(self):
         ...         def wrapped(*args, **kwargs):
-        ...             print 'called wrapped with', args, kwargs
+        ...             print('called wrapped with', args, kwargs)
         ...             if self.parameters['debug']:
-        ...                 print 'debug here'
+        ...                 print('debug here')
         ...             return self.to_wrap(*args, **kwargs)
         ...         return wrapped
         ...
@@ -469,19 +470,19 @@ class Cache(HybridDecorator):
         ... def compute():
         ...     return 'foo'
 
-        >>> compute()
-        'foo'
+        >>> print(compute())
+        foo
 
         >>> @Cache(debug=True)
         ... def compute():
         ...     return 'foo'
 
-        >>> compute()
+        >>> print(compute())
         Computing value for the first time since it's not in cache.
-        'foo'
-        >>> compute()
+        foo
+        >>> print(compute())
         Getting value from cache
-        'foo'
+        foo
     """
     PARAMETERS = ('debug', 'default_cache_value', 'cache_attr_pattern', 'recompute',
                   'recompute_parameter', 'is_cached', 'cache_attr')
@@ -517,11 +518,11 @@ class Cache(HybridDecorator):
             cache = self.get_cache(*args, **kwargs)
             if not recompute and self.in_cache(cache, *args, **kwargs):
                 if self.parameters['debug']:
-                    print 'Getting value from cache'
+                    print('Getting value from cache')
                 return self.from_cache(cache, *args, **kwargs)
 
             if self.parameters['debug']:
-                print 'Computing value for the first time since it\'s not in cache.'
+                print('Computing value for the first time since it\'s not in cache.')
             value = f(*args, **kwargs)
             self.to_cache(cache, value, *args, **kwargs)
 

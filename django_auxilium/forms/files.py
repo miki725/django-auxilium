@@ -1,3 +1,4 @@
+from __future__ import unicode_literals, print_function
 import os
 from django import forms
 from django.core.validators import EMPTY_VALUES
@@ -18,8 +19,8 @@ class FileFieldExt(forms.FileField):
     """
 
     default_error_messages = {
-        "extension": _(u"File extension is not supported."),
-        "mimetype": _(u"File mimetype is not supported.")
+        "extension": _("File extension is not supported."),
+        "mimetype": _("File mimetype is not supported.")
     }
 
     def __init__(self, *args, **kwargs):

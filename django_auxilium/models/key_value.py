@@ -1,5 +1,6 @@
+from __future__ import unicode_literals, print_function
 from django.db import models
-from fields import DataTypeField, ValueDataTypeField
+from .fields import ValueDataTypeField
 
 
 class KeyValueModel(models.Model):
