@@ -151,6 +151,8 @@ class LazyWrapper(Promise):
                     (cls,), namespace)
 
     def __new__(cls, possible_types, *args, **kwargs):
+        if type(possible_types) is type:
+            possible_types = [possible_types]
         klass = cls._lazy_proxy(possible_types)
         ins = object.__new__(klass)
         klass.__init__(ins, possible_types, *args, **kwargs)
@@ -176,17 +178,29 @@ class LazyDecorator(Decorator):
 
     ::
 
-        >>> lazy = LazyDecorator.to_decorator()
+        >>> lazy = LazyDecorator
 
-        >>> @lazy([six.text_type])
+        >>> @lazy([six.text_type, int])
         ... def a(bar):
-        ...   print("invoking a with {0}".format(bar))
-        ...   return bar + "foo"
+        ...   print('invoking a with {0}'.format(bar))
+        ...   if isinstance(bar, int):
+        ...       return bar + 5
+        ...   else:
+        ...       return bar + 'foo'
 
-        >>> l = a("bar")
-        >>> print(l)
+        >>> l = a('bar')
+        >>> isinstance(l, six.text_type)
         invoking a with bar
+        True
+        >>> print(l)
         barfoo
+
+        >>> l = a(5)
+        >>> isinstance(l, int)
+        invoking a with 5
+        True
+        >>> print(l)
+        10
     """
     PARAMETERS = ('types',)
 
@@ -197,4 +211,29 @@ class LazyDecorator(Decorator):
         return wrapper
 
 
-lazy = LazyDecorator.to_decorator()
+lazy = LazyDecorator
+
+
+def flazy(f, possible_types):
+    """
+    Wrapper function for the ``LazyDecorator``.
+
+    It has the same API as Django's ``lazy`` function so the same code can be reused
+    with this decorator if necessary.
+
+    Examples
+    --------
+
+    ::
+
+        >>> from django_auxilium.utils.functools import flazy as lazy
+
+        >>> # old code
+        >>> f = lambda: 5
+        >>> g = lazy(f, str)
+
+        >>> h = g()
+        >>> print(h)
+        5
+    """
+    return LazyDecorator(possible_types)(f)
