@@ -229,11 +229,14 @@ def flazy(f, possible_types):
         >>> from django_auxilium.utils.functools import flazy as lazy
 
         >>> # old code
-        >>> f = lambda: 5
-        >>> g = lazy(f, str)
+        >>> def f():
+        ...     print('inside f')
+        ...     return 5
+        >>> g = lazy(f, int)
 
         >>> h = g()
         >>> print(h)
+        inside f
         5
     """
     return LazyDecorator(possible_types)(f)
