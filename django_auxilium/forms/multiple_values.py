@@ -3,6 +3,7 @@ import re
 from django import forms
 from django.core.validators import EMPTY_VALUES
 from django.utils.translation import ugettext_lazy as _
+from .widgets import MultipleValuesWidget
 
 
 retype = type(re.compile(''))
@@ -24,6 +25,9 @@ class MultipleValuesField(forms.CharField):
         The delimiter according to which the values are split. It can also be given as a
         compiled regular expression (e.g. ``re.compile('\W+')``).
         Default is ``,`` (comma).
+    separator : str
+        Iff the delimiter is a regular expression, then this value will be used to
+        separate values within the widget.
     mapping : dict, callable, optional
         By default all split values are casted to a Python string. The mapping allows to
         change that so that individual values will be mapped to different data-types.
@@ -55,9 +59,11 @@ class MultipleValuesField(forms.CharField):
         'min_values': _('More values are necessary. Entered {} and need at least {}.'),
         'invalid_value': _('{} {} an invalid value.'),
     }
+    widget = MultipleValuesWidget
 
     def __init__(self,
                  delimiter=',',
+                 separator=None,
                  mapping=None,
                  max_values=None,
                  min_values=None,
@@ -66,6 +72,7 @@ class MultipleValuesField(forms.CharField):
                  invalid_values=None,
                  *args, **kwargs):
         self.delimiter = delimiter
+        self.separator = delimiter if not isinstance(delimiter, retype) else separator
         self.mapping = mapping or {}
         self.max_values = max_values
         self.min_values = min_values
@@ -73,7 +80,13 @@ class MultipleValuesField(forms.CharField):
         self.disregard_empty = disregard_empty
         self.invalid_values = set(invalid_values) if invalid_values else set()
 
+        if isinstance(kwargs.get('widget'), self.widget):
+            del kwargs['widget']
+        self.widget = self.widget(separator=self.separator)
+
         super(MultipleValuesField, self).__init__(*args, **kwargs)
+
+        self.widget.separator = self.separator
 
     def to_python(self, value, *args, **kwargs):
         value = super(MultipleValuesField, self).to_python(value, *args, **kwargs)
