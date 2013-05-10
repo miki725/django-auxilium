@@ -122,14 +122,14 @@ class DataTypeField(six.with_metaclass(models.SubfieldBase,
         return DataType(value)
 
     def get_prep_value(self, value):
-        return unicode(DataType(value))
+        return six.text_type(DataType(value))
 
     def value_to_string(self, obj):
         val = self._get_val_from_obj(obj)
         return self.get_prep_value(val)
 
     def validate(self, value, model_instance):
-        value = unicode(value)
+        value = six.text_type(value)
         return super(DataTypeField, self).validate(value, model_instance)
 
 
