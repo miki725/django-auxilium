@@ -5,8 +5,17 @@ which don't require much logic.
 
 from __future__ import unicode_literals, print_function
 from django.db import models, IntegrityError
-from django.contrib.auth.models import User
+from django.conf import settings
 from uuid import uuid4
+
+
+# Using get_user_model can cause circular inheritance due to custom
+# User models in Django >= 1.5 and therefore, the AUTH_USER_MODEL is
+# used to avoid the issue
+try:
+    User = settings.AUTH_USER_MODEL              # Django >= 1.5
+except AttributeError:
+    from django.contrib.auth.models import User  # Django <= 1.4
 
 
 class CreatedModel(models.Model):
@@ -116,7 +125,9 @@ class UUIDModel(models.Model):
             while True:
                 try:
                     return super(UUIDModel, self).save(*args, **kwargs)
-                except IntegrityError:
+                except IntegrityError as e:
+                    if not 'uuid' in e.message:
+                        raise
                     self.generate_uuid(True)
         else:
             return super(UUIDModel, self).save(*args, **kwargs)
