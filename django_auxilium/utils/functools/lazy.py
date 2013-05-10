@@ -151,8 +151,15 @@ class LazyWrapper(Promise):
                     (cls,), namespace)
 
     def __new__(cls, possible_types, *args, **kwargs):
-        if type(possible_types) is type:
+        try:
+            iter(possible_types)
+            iterable = True
+        except TypeError:
+            iterable = False
+
+        if not iterable:
             possible_types = [possible_types]
+
         klass = cls._lazy_proxy(possible_types)
         ins = object.__new__(klass)
         klass.__init__(ins, possible_types, *args, **kwargs)
