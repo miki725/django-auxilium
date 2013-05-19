@@ -6,6 +6,7 @@ which don't require much logic.
 from __future__ import unicode_literals, print_function
 from django.db import models, IntegrityError
 from django.conf import settings
+from django.utils.encoding import python_2_unicode_compatible
 from uuid import uuid4
 
 
@@ -87,6 +88,7 @@ class NoteModel(BaseModel):
         abstract = True
 
 
+@python_2_unicode_compatible
 class TitleDescriptionModel(BaseModel):
     """
     This model adds a notes field
@@ -103,7 +105,7 @@ class TitleDescriptionModel(BaseModel):
     class Meta:
         abstract = True
 
-    def __unicode__(self):
+    def __str__(self):
         return self.title
 
 
