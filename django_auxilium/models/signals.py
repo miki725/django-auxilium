@@ -33,8 +33,11 @@ class FileFieldAutoDelete(Decorator):
         why this pattern might be useful is because it can be used to disconnect the
         signal receiver at a later time.
     """
-    PARAMETERS = ('field', 'signal_name_pattern')
-    DEFAULTS = {'signal_name_pattern': 'post_delete_{model.__name__}_delete_{field}'}
+    PARAMETERS = ('field', 'signal', 'signal_name_pattern')
+    DEFAULTS = {
+        'signal': models.signals.post_delete,
+        'signal_name_pattern': 'post_delete_{model.__name__}_delete_{field}',
+    }
 
     def get_wrapped_object(self):
         """
@@ -130,10 +133,40 @@ class FileFieldAutoDelete(Decorator):
         """
         signal_name = self.get_signal_name()
         signal_function = self.get_signal_function()
-        models.signals.post_delete.connect(signal_function,
-                                           sender=self.to_wrap,
-                                           weak=False,
-                                           dispatch_uid=signal_name)
+        self.parameters['signal'].connect(signal_function,
+                                          sender=self.to_wrap,
+                                          weak=False,
+                                          dispatch_uid=signal_name)
+
+
+class FileFieldAutoChangeDelete(FileFieldAutoDelete):
+    DEFAULTS = dict(FileFieldAutoDelete.DEFAULTS)
+    DEFAULTS.update({
+        'signal': models.signals.post_save,
+        'signal_name_pattern': 'post_delete_{model.__name__}_changedelete_{field}'
+    })
+
+    def validate_model(self):
+        super(FileFieldAutoChangeDelete, self).validate_model()
+
+        if not all([callable(getattr(self.to_wrap, 'is_dirty', None)),
+                    callable(getattr(self.to_wrap, 'get_dirty_fields', None))]):
+            raise ValueError('Given model must implement `is_dirty` and '
+                             '`get_dirty_fields` methods.')
+
+    @cache
+    def get_signal_function(self):
+        def autoremove(sender, instance, *args, **kwargs):
+            if instance.is_dirty():
+                name = self.parameters['field']
+                new = getattr(instance, name)
+                old = instance.get_dirty_fields().get(name, None)
+                if old:
+                    old.delete(save=False)
+                    setattr(instance, name, new)
+
+        return autoremove
 
 
 file_field_auto_delete = FileFieldAutoDelete.to_decorator()
+file_field_auto_change_delete = FileFieldAutoChangeDelete.to_decorator()
