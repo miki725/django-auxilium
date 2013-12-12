@@ -1,6 +1,8 @@
 from __future__ import unicode_literals, print_function
 import inspect
+import six
 from django.db import models
+from django.dispatch.dispatcher import Signal
 from django_auxilium.utils.functools import Decorator, cache
 
 
@@ -114,6 +116,7 @@ class FileFieldAutoDelete(Decorator):
 
             def receiver(sender, instance, *args, **kwargs): pass
         """
+
         def remove(sender, instance, *args, **kwargs):
             """
             Automatically remove the file field when model instance is deleted.
@@ -170,3 +173,72 @@ class FileFieldAutoChangeDelete(FileFieldAutoDelete):
 
 file_field_auto_delete = FileFieldAutoDelete.to_decorator()
 file_field_auto_change_delete = FileFieldAutoChangeDelete.to_decorator()
+
+
+class AutoSignals(Decorator):
+    PARAMETERS = ('getter', 'signal_pool')
+    DEFAULTS = {
+        'getter': 'get_signals',
+        'signal_pool': dict(
+            [(k, v) for k, v in vars(models.signals).items() if isinstance(v, Signal)]
+        )
+    }
+
+    def validate_model(self):
+        if not inspect.isclass(self.to_wrap):
+            raise TypeError('This decorator can only be applied to classes')
+        if not issubclass(self.to_wrap, models.Model):
+            raise TypeError('Decorator can only be applied to Django models')
+        if not hasattr(self.to_wrap, self.parameters['getter']) and \
+                not callable(getattr(self.to_wrap, self.parameters['getter'])):
+            raise ValueError('Provided model must implement a method {}.'
+                             ''.format(self.parameters['getter']))
+
+    def get_wrapped_object(self):
+        self.validate_model()
+        self.connect_signals()
+
+        return self.to_wrap
+
+    def connect_signals(self):
+        signals = getattr(self.to_wrap, self.parameters['getter'])()
+        if not isinstance(signals, (list, tuple)):
+            signals = [signals]
+        for signal in signals:
+            self.connect_signal(signal)
+
+    def connect_signal(self, signal):
+        kwargs = {
+            'sender': self.to_wrap,
+        }
+
+        if isinstance(signal, dict):
+            kwargs.update(signal)
+        elif callable(signal):
+            kwargs.update({
+                'receiver': signal,
+            })
+        else:
+            raise TypeError('Signal was provided as non-supported type `{}`.'
+                            ''.format(type(signal).__name__))
+
+        # if signal to connect to was not provided explicitly
+        # try to determine it from the callable name
+        if 'signal' not in kwargs:
+            for s in self.parameters['signal_pool'].keys():
+                if s in kwargs['receiver'].__name__:
+                    kwargs['signal'] = s
+                    break
+
+            # the callable name does not suggest which signal to use
+            if 'signal' not in kwargs:
+                raise ValueError('Signal to connect to was not provided.')
+
+        # get the signal callable
+        if isinstance(kwargs['signal'], six.string_types):
+            kwargs['signal'] = self.parameters['signal_pool'][kwargs['signal']]
+
+        kwargs.pop('signal').connect(**kwargs)
+
+
+auto_signals = AutoSignals.to_decorator()
