@@ -1,6 +1,7 @@
 from __future__ import unicode_literals, print_function
 import inspect
 import six
+from copy import deepcopy
 from django.db import models
 from django.dispatch.dispatcher import Signal
 from django_auxilium.utils.functools import Decorator
@@ -79,13 +80,15 @@ class FileFieldAutoDelete(Decorator):
             raise TypeError('Decorator can only be applied to Django models')
 
         valid = True
-        all_fields = self.to_wrap._meta.get_all_field_names()
+
+        _meta = deepcopy(self.to_wrap._meta)
+        all_fields = _meta.get_all_field_names()
 
         if self.parameters['field'] not in all_fields:
             valid = False
 
         if valid:
-            field = self.to_wrap._meta.get_field_by_name(
+            field = _meta.get_field_by_name(
                 self.parameters['field'])[0].__class__
             if not issubclass(field, models.FileField):
                 valid = False
