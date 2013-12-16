@@ -3,7 +3,7 @@ import inspect
 import six
 from django.db import models
 from django.dispatch.dispatcher import Signal
-from django_auxilium.utils.functools import Decorator, cache
+from django_auxilium.utils.functools import Decorator
 
 
 class FileFieldAutoDelete(Decorator):
@@ -108,7 +108,6 @@ class FileFieldAutoDelete(Decorator):
             field=self.parameters['field']
         )
 
-    @cache
     def get_signal_function(self):
         """
         Get the actual function which will be connected to the Django's signal which
@@ -157,7 +156,6 @@ class FileFieldAutoChangeDelete(FileFieldAutoDelete):
             raise ValueError('Given model must implement `is_dirty` and '
                              '`get_dirty_fields` methods.')
 
-    @cache
     def get_signal_function(self):
         def autoremove(sender, instance, *args, **kwargs):
             if instance.is_dirty():
