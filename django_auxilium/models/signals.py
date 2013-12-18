@@ -4,7 +4,7 @@ import six
 from copy import deepcopy
 from django.db import models
 from django.dispatch.dispatcher import Signal
-from django_auxilium.utils.functools import Decorator
+from django_auxilium.utils.functools import Decorator, cache
 
 
 class FileFieldAutoDelete(Decorator):
@@ -111,6 +111,7 @@ class FileFieldAutoDelete(Decorator):
             field=self.parameters['field']
         )
 
+    @cache
     def get_signal_function(self):
         """
         Get the actual function which will be connected to the Django's signal which
@@ -159,6 +160,7 @@ class FileFieldAutoChangeDelete(FileFieldAutoDelete):
             raise ValueError('Given model must implement `is_dirty` and '
                              '`get_dirty_fields` methods.')
 
+    @cache
     def get_signal_function(self):
         def autoremove(sender, instance, *args, **kwargs):
             if instance.is_dirty():
@@ -190,8 +192,8 @@ class AutoSignals(Decorator):
             raise TypeError('This decorator can only be applied to classes')
         if not issubclass(self.to_wrap, models.Model):
             raise TypeError('Decorator can only be applied to Django models')
-        if not hasattr(self.to_wrap, self.parameters['getter']) and \
-                not callable(getattr(self.to_wrap, self.parameters['getter'])):
+        if not (hasattr(self.to_wrap, self.parameters['getter']) and
+                    callable(getattr(self.to_wrap, self.parameters['getter']))):
             raise ValueError('Provided model must implement a method {}.'
                              ''.format(self.parameters['getter']))
 

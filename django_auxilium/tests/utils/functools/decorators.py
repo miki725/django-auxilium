@@ -118,11 +118,18 @@ class DecoratorTest(TestCase):
         self.assertTrue(f is d(f))
         self.assertTrue(f is d()(f))
 
+        class F(object):
+            pass
+
+        self.assertTrue(F is d(F))
+        self.assertTrue(F is d()(F))
+
     def test_wraps(self):
         """
         Make sure the decorator correctly wraps the input function by
         preserving private attributes like ``__doc__``.
         """
+
         class D(Decorator):
             def get_wrapped_object(self):
                 return lambda a: a
@@ -152,6 +159,7 @@ class DecoratorTest(TestCase):
 
         def f():
             return 'foo'
+
         g = d(f)
 
         self.assertEqual(f(), g())
@@ -162,6 +170,7 @@ class DecoratorTest(TestCase):
         Python's ``functools.wraps`` can't wrap classes. This method tests how classes
         are wrapped.
         """
+
         class Foo(object):
             pass
 
@@ -192,6 +201,7 @@ class HybridDecoratorTest(TestCase):
 
         class D(HybridDecorator):
             pass
+
         d = D()
 
         class Foo(object):
@@ -226,6 +236,55 @@ class HybridDecoratorTest(TestCase):
 
         self.assertFalse(d.in_class)
 
+    def test_is_in_class_with_decorator(self):
+        class Foo(HybridDecorator):
+            def get_wrapped_object(self):
+                obj = super(Foo, self).get_wrapped_object()
+                obj.decorator = self
+                return obj
+
+        d = Foo().to_decorator()
+
+        @d()
+        def f():
+            return 'bar'
+
+        self.assertFalse(f.decorator.in_class)
+
+        def f():
+            return 'bar'
+
+        f = d()(f)
+
+        self.assertFalse(f.decorator.in_class)
+
+        @d
+        def f():
+            return 'bar'
+
+        self.assertFalse(f.decorator.in_class)
+
+        def f():
+            return 'bar'
+
+        f = d(f)
+
+        self.assertFalse(f.decorator.in_class)
+
+        class Bar(object):
+            @d()
+            def foo(self):
+                return 'foo'
+
+        self.assertTrue(Bar.foo.decorator.in_class)
+
+        class Bar(object):
+            @d
+            def foo(self):
+                return 'foo'
+
+        self.assertTrue(Bar.foo.decorator.in_class)
+
 
 class CacheTest(TestCase):
     def test_init_cache(self):
@@ -248,6 +307,7 @@ class CacheTest(TestCase):
             @d
             def foo(self):
                 return 'bar'
+
         foo = Foo()
 
         self.assertFalse(hasattr(d, 'cache'))
@@ -264,6 +324,7 @@ class CacheTest(TestCase):
 
         def f():
             return 'foo'
+
         d(f)
 
         self.assertTrue(d.cache is d.get_cache(f))
@@ -276,6 +337,7 @@ class CacheTest(TestCase):
             @d
             def foo(self):
                 return 'bar'
+
         foo = Foo()
         foo.foo()
 
@@ -289,6 +351,7 @@ class CacheTest(TestCase):
 
         def f():
             return 'foo'
+
         g = d(f)
 
         self.assertFalse(d.in_cache(d.cache, f))
@@ -303,6 +366,7 @@ class CacheTest(TestCase):
 
         def f():
             return 'foo'
+
         g = d(f)
 
         d.to_cache(d.cache, 'bar', f)
@@ -316,6 +380,7 @@ class CacheTest(TestCase):
             @d
             def foo(self):
                 return 'bar'
+
         foo = Foo()
 
         d.to_cache(None, 'hello', foo)
@@ -393,6 +458,7 @@ class MemoizeTest(TestCase):
 
         def f(a):
             return a
+
         g = d(f)
 
         self.assertFalse('(5,){}' in d.cache)
@@ -407,6 +473,7 @@ class MemoizeTest(TestCase):
             @d
             def foo(self, a):
                 return a
+
         foo = Foo()
         foo.foo(4)
 
@@ -424,6 +491,7 @@ class MemoizeTest(TestCase):
 
         def f(a):
             return a
+
         g = d(f)
 
         g(5)
@@ -439,6 +507,7 @@ class MemoizeTest(TestCase):
 
         def f(a):
             return a
+
         d(f)
 
         self.assertFalse('(5,){}' in d.cache)

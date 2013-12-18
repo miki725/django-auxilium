@@ -390,6 +390,7 @@ class Decorator(object):
             >>> type(foo) is FunctionType
             True
         """
+
         @wraps(cls)
         def wrapper(*args, **kwargs):
             if args and (callable(args[0]) or inspect.isclass(args[0])):
@@ -429,7 +430,6 @@ class HybridDecorator(Decorator):
             class attribute so please refer to its output at that attribute.
         """
         frames = inspect.stack()
-        defined_in_class = False
 
         diff = 0
 
@@ -441,12 +441,18 @@ class HybridDecorator(Decorator):
 
         frame_depth = 4 + diff
 
-        if len(frames) > frame_depth:
-            maybe_class_frame = frames[frame_depth]
-            statement_list = maybe_class_frame[4]
-            first_statment = statement_list[0]
-            if first_statment.strip().startswith('class '):
-                defined_in_class = True
+        def check(i):
+            if len(frames) > frame_depth:
+                maybe_class_frame = frames[i]
+                statement_list = maybe_class_frame[4]
+                first_statment = statement_list[0]
+                if first_statment.strip().startswith('class '):
+                    return True
+            return False
+
+        defined_in_class = check(frame_depth)
+        if not defined_in_class:
+            defined_in_class = check(frame_depth + 1)
 
         return defined_in_class
 
@@ -461,6 +467,37 @@ class HybridDecorator(Decorator):
 
 class Cache(HybridDecorator):
     """
+    Parameters
+    ----------
+    debug : bool
+        If ``True``, extra debug information is printed out to stdout
+    default_cache_value : any
+        The default value of the cache when it is initialized.
+        Default is ``None``. Since the behaviour of checking if
+        cache exists can be customized using ``in_cache``,
+        for some applications it could make sense to change
+        the default cache value (e.g. ``dict`` for memoizing).
+    cache_attr_pattern : str
+        String format to use for the cache attribute when cache
+        is a class method cache. Default is ``'_{}'``.
+    recompute : bool
+        Default recompute parameter value for the ``recompute_parameter``
+        when it is not provided.
+    recompute_parameter : str
+        Name of the parameter given to the cached function which
+        when set ``True`` recomputes the cache even if it was
+        computed previously. If this parameter is not provided to
+        the cached function, the default value is used as provided
+        by ``recompute`` (see above).
+    is_cached : str
+        Name of the attribute to set to identity that the function is cached.
+        This provides a method to test if a function is being cached or not.
+        Default is ``'is_cached'``.
+    cache_attr : str
+        The name of the attribute of the object to be cached which stores
+        the name of the attribute where cache is stored.
+        Default is ``'cache_attr'``.
+
     Examples
     --------
 
@@ -502,6 +539,7 @@ class Cache(HybridDecorator):
         self.cache_attr = self.parameters['cache_attr_pattern'].format(f.__name__)
 
         f = super(Cache, self).get_wrapped_object()
+        # does not init cache if cache is for class
         self.init_cache()
 
         setattr(f, self.parameters['is_cached'], True)
@@ -531,6 +569,7 @@ class Cache(HybridDecorator):
         return wrapper
 
     def init_cache(self, *args, **kwargs):
+        # the first arg is a class instance
         if self.in_class and args:
             if not hasattr(args[0], self.cache_attr):
                 setattr(args[0], self.cache_attr,
