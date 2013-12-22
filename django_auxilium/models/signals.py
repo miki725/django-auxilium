@@ -94,7 +94,7 @@ class FileFieldAutoDelete(Decorator):
                 valid = False
 
         if not valid:
-            m = 'Field "{}" must be a subclass of Django ``FileField``'
+            m = 'Field "{0}" must be a subclass of Django ``FileField``'
             raise TypeError(m.format(self.parameters['field']))
 
     def get_signal_name(self):
@@ -194,7 +194,7 @@ class AutoSignals(Decorator):
             raise TypeError('Decorator can only be applied to Django models')
         if not (hasattr(self.to_wrap, self.parameters['getter']) and
                     callable(getattr(self.to_wrap, self.parameters['getter']))):
-            raise ValueError('Provided model must implement a method {}.'
+            raise ValueError('Provided model must implement a method {0}.'
                              ''.format(self.parameters['getter']))
 
     def get_wrapped_object(self):
@@ -222,7 +222,7 @@ class AutoSignals(Decorator):
                 'receiver': signal,
             })
         else:
-            raise TypeError('Signal was provided as non-supported type `{}`.'
+            raise TypeError('Signal was provided as non-supported type `{0}`.'
                             ''.format(type(signal).__name__))
 
         # if signal to connect to was not provided explicitly

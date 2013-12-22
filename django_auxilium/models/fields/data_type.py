@@ -40,11 +40,11 @@ class DataType(object):
             self.datatype = datatype
 
         else:
-            raise TypeError('Unsupported {}'.format(six.text_type(t_datatype)))
+            raise TypeError('Unsupported {0}'.format(six.text_type(t_datatype)))
 
     def get_custom_method(self, direction):
-        method_name = '{}_{}'.format(direction,
-                                     self.INVERSE_SUPPORTED_TYPES[self.datatype])
+        method_name = '{0}_{1}'.format(direction,
+                                       self.INVERSE_SUPPORTED_TYPES[self.datatype])
 
         if hasattr(self, method_name) and callable(getattr(self, method_name)):
             return getattr(self, method_name)

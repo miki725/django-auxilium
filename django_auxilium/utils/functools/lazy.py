@@ -146,9 +146,11 @@ class LazyWrapper(Promise):
                 if hasattr(t, name) and name not in namespace:
                     namespace[name] = make_method(name)
 
-        return type(str('{}({})'.format(cls.__name__,
-                                        '|'.join([i.__name__ for i in possible_types]))),
-                    (cls,), namespace)
+        return type(
+            str('{0}({1})'.format(cls.__name__,
+                                  '|'.join([i.__name__ for i in possible_types]))),
+            (cls,), namespace
+        )
 
     def __new__(cls, possible_types, *args, **kwargs):
         try:

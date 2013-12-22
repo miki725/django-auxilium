@@ -37,7 +37,7 @@ class TestDataType(TestCase):
             for m in methods:
                 dt.datatype = DataType.SUPPORTED_TYPES[m]
                 self.assertEqual(dt.get_custom_method(d),
-                                 getattr(dt, '{}_{}'.format(d, m)))
+                                 getattr(dt, '{0}_{1}'.format(d, m)))
 
         for d in ['encode', 'decode']:
             for m in non_existing:

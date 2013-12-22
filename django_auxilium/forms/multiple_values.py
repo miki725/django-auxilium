@@ -55,9 +55,9 @@ class MultipleValuesField(forms.CharField):
         encountered, a ``ValidationError`` will be raised.
     """
     default_error_messages = {
-        'max_values': _('More values than allowed. Entered {} and allowed {}.'),
-        'min_values': _('More values are necessary. Entered {} and need at least {}.'),
-        'invalid_value': _('{} {} an invalid value.'),
+        'max_values': _('More values than allowed. Entered {0} and allowed {1}.'),
+        'min_values': _('More values are necessary. Entered {0} and need at least {1}.'),
+        'invalid_value': _('{0} {1} an invalid value.'),
     }
     widget = MultipleValuesWidget
 
@@ -117,7 +117,7 @@ class MultipleValuesField(forms.CharField):
 
         if self.min_values and len(values) < self.min_values:
             raise forms.ValidationError(
-                self.error_messages['max_values'].format(len(values), self.min_values)
+                self.error_messages['min_values'].format(len(values), self.min_values)
             )
 
         if self.max_values and len(values) > self.max_values:

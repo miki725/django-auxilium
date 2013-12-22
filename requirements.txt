@@ -2,6 +2,5 @@ coverage
 django
 django-nose
 mock
-south
 tox
 six

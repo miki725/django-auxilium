@@ -200,7 +200,7 @@ class Decorator(object):
                 pattern = identifier_re_arbitrary
 
             if not pattern.findall(p):
-                raise SyntaxError('Invalid identifier name "{}"'.format(p))
+                raise SyntaxError('Invalid identifier name "{0}"'.format(p))
 
         # check args and kwargs
         arbitrary = self.PARAMETERS[-2:]
@@ -314,13 +314,13 @@ class Decorator(object):
                 params_set.append(p)
 
             else:
-                raise TypeError('"{}" argument is not provided'.format(p))
+                raise TypeError('"{0}" argument is not provided'.format(p))
 
         # handle **kwargs
         if kwargs:
             for k in kwargs.keys():
                 if k in params_set:
-                    raise SyntaxError('"{}" parameter is repeated'.format(k))
+                    raise SyntaxError('"{0}" parameter is repeated'.format(k))
             if kwargs_parameter:
                 parameters[kwargs_parameter] = kwargs
             else:
@@ -527,7 +527,7 @@ class Cache(HybridDecorator):
     DEFAULTS.update({
         'debug': False,
         'default_cache_value': None,
-        'cache_attr_pattern': '_{}',
+        'cache_attr_pattern': '_{0}',
         'recompute': False,
         'recompute_parameter': 'recompute',
         'is_cached': 'is_cached',

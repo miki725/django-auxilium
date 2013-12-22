@@ -44,7 +44,7 @@ class MultipleValuesField(six.with_metaclass(models.SubfieldBase, models.TextFie
             pass
 
         else:
-            raise TypeError('Unsupported {}'.format(six.text_type(type(value))))
+            raise TypeError('Unsupported {0}'.format(six.text_type(type(value))))
 
         return value
 

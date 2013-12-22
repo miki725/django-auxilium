@@ -35,7 +35,7 @@ def random_filename_upload_to(path):
 
     def f(instance, filename):
         ext = filename.split('.')[-1]
-        filename = '{}.{}'.format(uuid4().hex, ext)
+        filename = '{0}.{1}'.format(uuid4().hex, ext)
         return os.path.join(path, filename)
 
     return f

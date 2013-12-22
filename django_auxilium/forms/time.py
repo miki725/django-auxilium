@@ -8,7 +8,7 @@ from django.utils.translation import ugettext_lazy as _
 class TimeField(forms.CharField):
     default_error_messages = {
         "invalid": _("Invalid time format"),
-        }
+    }
 
     def to_python(self, value):
         data = super(self.__class__, self).to_python(value)
@@ -23,8 +23,8 @@ class TimeField(forms.CharField):
             raise forms.ValidationError(self.error_messages['invalid'])
 
         result = result[0]
-        hour = '{:02}'.format(int(result[0]))
+        hour = '{0:02}'.format(int(result[0]))
         minutes = result[1]
         ampm = result[2]
 
-        return '{}:{} {}'.format(hour, minutes, ampm)
+        return '{0}:{1} {2}'.format(hour, minutes, ampm)

@@ -23,9 +23,9 @@ class RangeSelector(forms.CharField):
     default_error_messages = {
         "invalid": _("Invalid range value."),
         "values": _("Top-left coordinate must be first."),
-        "max_rows": _("Too many rows selected. Maximum is {}."),
-        "max_cols": _("Too many columns selected. Maximum is {}."),
-        "max_either": _("Too many rows or columns selected. Maximum is {}."),
+        "max_rows": _("Too many rows selected. Maximum is {0}."),
+        "max_cols": _("Too many columns selected. Maximum is {0}."),
+        "max_either": _("Too many rows or columns selected. Maximum is {0}."),
     }
 
     def __init__(self, *args, **kwargs):
@@ -126,12 +126,15 @@ class RangeSelector(forms.CharField):
         # validate the maximum rows and columns
         if self.max_cols:
             if validateMax(self.max_cols) is False:
-                raise forms.ValidationError(self.error_messages['max_cols'].format(self.max_cols))
+                raise forms.ValidationError(
+                    self.error_messages['max_cols'].format(self.max_cols))
         if self.max_rows:
             if validateMax(self.max_rows, 1) is False:
-                raise forms.ValidationError(self.error_messages['max_rows'].format(self.max_rows))
+                raise forms.ValidationError(
+                    self.error_messages['max_rows'].format(self.max_rows))
         if self.max_either:
             if not validateMax(self.max_either, 1) and not validateMax(self.max_either):
-                raise forms.ValidationError(self.error_messages['max_either'].format(self.max_either))
+                raise forms.ValidationError(
+                    self.error_messages['max_either'].format(self.max_either))
 
         return datarange

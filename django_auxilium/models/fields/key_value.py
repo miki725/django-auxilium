@@ -12,7 +12,7 @@ class ValueDescriptor(object):
     def __init__(self, field, datatype_field):
         self.field = field
         self.datatype_field = datatype_field
-        self.value_attribute = '_{}'.format(field.attname)
+        self.value_attribute = '_{0}'.format(field.attname)
 
     def get_datatype(self, instance):
         if hasattr(instance, self.datatype_field):
@@ -24,7 +24,7 @@ class ValueDescriptor(object):
     def __get__(self, instance, owner):
         if not instance:
             raise AttributeError(
-                "The '{}' attribute can only be accessed from '{}' instances.".format(
+                "The '{0}' attribute can only be accessed from '{1}' instances.".format(
                     self.field.name, owner.__name__
                 ))
 
