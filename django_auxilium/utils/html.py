@@ -47,11 +47,11 @@ def simple_minify(html):
     the excluded tags. That means that all the whitespace within the even elements can
     be removed using the whitespace regex and ``re.sub`` method.
     """
-    html = strip_spaces_between_tags(html)
     components = RE_EXCLUDE_TAGS.split(html)
     html = ''
     for i, component in enumerate(components):
         if i % 2 == 0:
+            component = strip_spaces_between_tags(component.strip())
             component = RE_WHITESPACE.sub(' ', component)
         html += component
     return html
