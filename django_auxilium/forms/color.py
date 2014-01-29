@@ -53,9 +53,7 @@ class ColorSelector(forms.CharField):
 
         if self.color_type == 'hex':
             for p in ['hash_required', 'hash_output']:
-                setattr(self, p, None)
-                if p in kwargs:
-                    setattr(self, p, kwargs.pop(p))
+                setattr(self, p, kwargs.pop(p, None))
 
         super(self.__class__, self).__init__(*args, **kwargs)
 
@@ -82,11 +80,11 @@ class ColorSelector(forms.CharField):
             if not r.findall(value):
                 raise forms.ValidationError(self.error_messages['invalid'])
 
-            # remove has if exists
+            # remove hash if exists
             if value[0] == '#':
                 value = value[1:]
 
-            # add has only if required for output
+            # add hash only if required for output
             if self.hash_output:
                 value = '#' + value
 

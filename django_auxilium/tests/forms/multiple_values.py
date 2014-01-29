@@ -1,5 +1,7 @@
 from __future__ import unicode_literals, print_function
+import random
 import re
+import six
 from django import forms
 from django.test import TestCase
 from django_auxilium.forms.multiple_values import MultipleValuesField
@@ -47,6 +49,14 @@ class MultipleValuesField_Test(TestCase):
         form = MultipleValuesField(mapping=mapping_callable)
         self.assertListEqual(form.clean(value), expected)
 
+        form = MultipleValuesField(mapping=int)
+        expected = random.sample(xrange(100000), 5)
+        value = ','.join([six.text_type(i) for i in expected])
+        self.assertListEqual(form.clean(value), expected)
+
+        with self.assertRaises(forms.ValidationError):
+            form.clean('foo')
+
     def test_max_values(self):
         expected = ['foo', 'bar', 'foo2', 'bar2']
         data = ','.join(expected)
@@ -54,9 +64,14 @@ class MultipleValuesField_Test(TestCase):
         form = MultipleValuesField(max_values=2)
         with self.assertRaises(forms.ValidationError):
             form.clean(data)
+        with self.assertRaises(forms.ValidationError):
+            form.clean('')
 
         form = MultipleValuesField(max_length=10)
         self.assertListEqual(form.clean(data), expected)
+
+        form = MultipleValuesField(max_length=10, required=False)
+        self.assertListEqual(form.clean(''), [])
 
     def test_min_values(self):
         expected = ['foo', 'bar', 'foo2', 'bar2']
@@ -65,9 +80,14 @@ class MultipleValuesField_Test(TestCase):
         form = MultipleValuesField(min_values=10)
         with self.assertRaises(forms.ValidationError):
             form.clean(data)
+        with self.assertRaises(forms.ValidationError):
+            form.clean('')
 
         form = MultipleValuesField(min_length=2)
         self.assertListEqual(form.clean(data), expected)
+
+        form = MultipleValuesField(min_length=2, required=False)
+        self.assertListEqual(form.clean(''), [])
 
     def test_strip(self):
         data = ['foo', 'bar', 'foo2   ', '   bar2']

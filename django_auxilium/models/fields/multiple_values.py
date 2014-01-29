@@ -68,11 +68,13 @@ class MultipleValuesField(six.with_metaclass(models.SubfieldBase, models.TextFie
     def formfield(self, **kwargs):
         defaults = {
             'form_class': FMultipleValuesField,
-            'widget': MultipleValuesWidget,
         }
         for attr in self.FORM_ATTRIBUTES.keys():
             defaults[attr] = getattr(self, attr)
         defaults.update(kwargs)
+        defaults.update({
+            'widget': MultipleValuesWidget,
+        })
         return super(MultipleValuesField, self).formfield(**defaults)
 
 

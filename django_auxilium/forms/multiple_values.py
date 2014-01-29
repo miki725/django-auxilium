@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, print_function
 import re
+import six
 from django import forms
 from django.core.validators import EMPTY_VALUES
 from django.utils.translation import ugettext_lazy as _
@@ -57,7 +58,8 @@ class MultipleValuesField(forms.CharField):
     default_error_messages = {
         'max_values': _('More values than allowed. Entered {0} and allowed {1}.'),
         'min_values': _('More values are necessary. Entered {0} and need at least {1}.'),
-        'invalid_value': _('{0} {1} an invalid value.'),
+        'invalid_value': _('{0} is an invalid value.'),
+        'invalid_values': _('{0} are invalid values.'),
     }
     widget = MultipleValuesWidget
 
@@ -108,30 +110,50 @@ class MultipleValuesField(forms.CharField):
             if not callable(self.mapping):
                 values = [self.mapping.get(i, i) for i in values]
             else:
-                values = [self.mapping(i) for i in values]
+                invalid_values = []
+                for i, v in enumerate(values):
+                    try:
+                        values[i] = self.mapping(v)
+                    except Exception:
+                        invalid_values.append(v)
+                if invalid_values:
+                    if len(invalid_values) == 1:
+                        error_message = 'invalid_value'
+                    else:
+                        error_message = 'invalid_values'
+                    raise forms.ValidationError(
+                        self.error_messages[error_message].format(
+                            ", ".join([six.text_type(i) for i in invalid_values])
+                        )
+                    )
 
         return values
 
     def validate(self, values):
         super(MultipleValuesField, self).validate(values)
 
-        if self.min_values and len(values) < self.min_values:
-            raise forms.ValidationError(
-                self.error_messages['min_values'].format(len(values), self.min_values)
-            )
+        if self.required or values:
+            if self.min_values and len(values) < self.min_values:
+                raise forms.ValidationError(
+                    self.error_messages['min_values'].format(len(values), self.min_values)
+                )
 
-        if self.max_values and len(values) > self.max_values:
-            raise forms.ValidationError(
-                self.error_messages['max_values'].format(len(values), self.max_values)
-            )
+            if self.max_values and len(values) > self.max_values:
+                raise forms.ValidationError(
+                    self.error_messages['max_values'].format(len(values), self.max_values)
+                )
 
         if self.invalid_values:
             invalid_values = set(values).intersection(self.invalid_values)
             if invalid_values:
+                if len(invalid_values) == 1:
+                    error_message = 'invalid_value'
+                else:
+                    error_message = 'invalid_values'
                 raise forms.ValidationError(
-                    self.error_messages['invalid_value'].format(
-                        ", ".join([str(i) for i in invalid_values]),
-                        'is' if len(invalid_values) == 1 else 'are')
+                    self.error_messages[error_message].format(
+                        ", ".join([six.text_type(i) for i in invalid_values])
+                    )
                 )
 
     def run_validators(self, values):
