@@ -50,7 +50,7 @@ class MultipleValuesField_Test(TestCase):
         self.assertListEqual(form.clean(value), expected)
 
         form = MultipleValuesField(mapping=int)
-        expected = random.sample(xrange(100000), 5)
+        expected = random.sample(six.moves.range(100000), 5)
         value = ','.join([six.text_type(i) for i in expected])
         self.assertListEqual(form.clean(value), expected)
 
