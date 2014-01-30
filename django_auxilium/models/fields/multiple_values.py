@@ -82,6 +82,8 @@ if add_introspection_rules:
     dummy = MultipleValuesField()
     kwargs = {}
     for attr in MultipleValuesField.FORM_ATTRIBUTES.keys():
+        if attr in ['mapping']:
+            continue
         kwargs[attr] = (attr, {'default': getattr(dummy, attr)})
 
     add_introspection_rules(
