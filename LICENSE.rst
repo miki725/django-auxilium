@@ -1,12 +1,9 @@
-===============
-Django Auxilium
-===============
+License
+-------
 
 The source code can be found at `Github <https://github.com/miki725/django-auxilium>`_.
 
 This library is licensed with `MIT License <http://opensource.org/licenses/MIT>`_::
-
-    Copyright (c) 2013 Miroslav Shubernetskiy
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
