@@ -9,15 +9,24 @@ from random import randint
 import six
 
 
+APP_COUNTER = 0
+
+
 class TestFileFieldAutoDelete(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.f = FileFieldAutoDelete.to_decorator()('file_field')
 
     def get_model(self):
+        global APP_COUNTER
+        APP_COUNTER += 1
+
         class Model(models.Model):
             file_field = models.FileField(upload_to='foo')
             foo_field = models.CharField(max_length=32)
+
+            class Meta(object):
+                app_label = '{}{}'.format(__file__, APP_COUNTER)
 
         return Model
 
@@ -103,7 +112,7 @@ class TestFileFieldAutoDelete(TestCase):
         # file_field not there as returned by __nonzero__() == 0
         mock = MagicMock()
         try:
-            mock.file_field.__nonzero__.return_value = 0   # Python 2
+            mock.file_field.__nonzero__.return_value = 0  # Python 2
         except AttributeError:
             mock.file_field.__bool__.return_value = False  # Python 3
         a(None, mock)

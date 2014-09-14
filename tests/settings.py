@@ -10,11 +10,11 @@ DATABASES = {
 }
 
 INSTALLED_APPS = (
-    #'django.contrib.auth',
-    #'django.contrib.contenttypes',
     'django_nose',
     'django_auxilium',
 )
+
+MIDDLEWARE_CLASSES = tuple()
 
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 NOSE_ARGS = (

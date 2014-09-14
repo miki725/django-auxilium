@@ -70,6 +70,8 @@ def original_random_filename_upload_to(path, filename_field):
 class RandomFileFieldMeta(object):
     @staticmethod
     def random_init(self, *args, **kwargs):
+        assert kwargs.get('upload_to') is not None
+
         self.upload_to_path = kwargs['upload_to']
         kwargs['upload_to'] = random_filename_upload_to(kwargs['upload_to'])
 
@@ -77,6 +79,8 @@ class RandomFileFieldMeta(object):
 
     @staticmethod
     def original_random_init(self, *args, **kwargs):
+        assert kwargs.get('upload_to') is not None
+
         self.filename_field = kwargs.pop('filename_field', 'filename')
         self.upload_to_path = kwargs['upload_to']
         kwargs['upload_to'] = original_random_filename_upload_to(kwargs['upload_to'],
@@ -90,7 +94,7 @@ class RandomFileFieldMeta(object):
         kwargs.update({
             'upload_to': self.upload_to_path,
         })
-        if hasattr(self, 'filename_field'):
+        if hasattr(self, 'filename_field') and self.filename_field != 'filename':
             kwargs.update({
                 'filename_field': self.filename_field,
             })
