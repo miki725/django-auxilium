@@ -84,26 +84,42 @@ class RandomFileFieldMeta(object):
 
         super(self.__class__, self).__init__(*args, **kwargs)
 
+    @staticmethod
+    def deconstruct(self):
+        name, path, args, kwargs = super(self.__class__, self).deconstruct()
+        kwargs.update({
+            'upload_to': self.upload_to_path,
+        })
+        if hasattr(self, 'filename_field'):
+            kwargs.update({
+                'filename_field': self.filename_field,
+            })
+        return name, path, args, kwargs
+
 
 RandomFileField = \
     type(str('RandomFileField'),
          (models.FileField,),
-         {'__init__': RandomFileFieldMeta.random_init})
+         {'__init__': RandomFileFieldMeta.random_init,
+          'deconstruct': RandomFileFieldMeta.deconstruct})
 
 OriginalFilenameRandomFileField = \
     type(str('OriginalFilenameRandomFileField'),
          (models.FileField,),
-         {'__init__': RandomFileFieldMeta.original_random_init})
+         {'__init__': RandomFileFieldMeta.original_random_init,
+          'deconstruct': RandomFileFieldMeta.deconstruct})
 
 RandomImageField = \
     type(str('RandomImageField'),
          (models.ImageField,),
-         {'__init__': RandomFileFieldMeta.random_init})
+         {'__init__': RandomFileFieldMeta.random_init,
+          'deconstruct': RandomFileFieldMeta.deconstruct})
 
 OriginalFilenameRandomImageField = \
     type(str('OriginalFilenameRandomImageField'),
          (models.ImageField,),
-         {'__init__': RandomFileFieldMeta.original_random_init})
+         {'__init__': RandomFileFieldMeta.original_random_init,
+          'deconstruct': RandomFileFieldMeta.deconstruct})
 
 if add_introspection_rules:
     suffix = 'Random(?:File|Image)Field'
