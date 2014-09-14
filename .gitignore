@@ -6,3 +6,4 @@ dist/
 *.egg-info
 *zip
 *tar.gz
+build/
