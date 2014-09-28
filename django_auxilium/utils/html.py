@@ -53,7 +53,11 @@ def simple_minify(html):
         if i % 2 == 0:
             component = strip_spaces_between_tags(component.strip())
             component = RE_WHITESPACE.sub(' ', component)
-        html += component
+            html += component
+        elif component.startswith('<code'):
+            html += ' ' + component + ' '
+        else:
+            html += component
     return html
 
 

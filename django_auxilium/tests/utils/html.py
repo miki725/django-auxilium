@@ -46,8 +46,8 @@ MINIFY_EXPECTED = """<html><head><title>Minify Test</title><script>
 Input
 Here
   123
-    </textarea><code>Code
-    Here</code><pre>
+    </textarea> <code>Code
+    Here</code> <pre>
     <span>Hello</span>
     <b>World</b>
     {
