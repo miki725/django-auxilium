@@ -1,6 +1,10 @@
 from __future__ import unicode_literals, print_function
 import re
+
 from django.utils.html import strip_spaces_between_tags
+
+from .string import string_onion
+
 
 try:                 # Python 2
     import htmlentitydefs
@@ -8,6 +12,7 @@ try:                 # Python 2
 except ImportError:  # Python 3
     from html import entities as htmlentitydefs
     from html.parser import HTMLParser
+
 
 EXCLUDE_TAGS = ('textarea', 'pre', 'code', 'script',)
 RE_WHITESPACE = re.compile(r'\s{2,}|\n')
@@ -22,6 +27,7 @@ RE_EXCLUDE_TAGS = re.compile(
     re.DOTALL | re.VERBOSE)
 
 
+@string_onion
 def simple_minify(html):
     """
     Minify HTML with very simple algorithm.
