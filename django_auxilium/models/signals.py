@@ -167,7 +167,7 @@ class FileFieldAutoChangeDelete(FileFieldAutoDelete):
                 name = self.parameters['field']
                 new = getattr(instance, name)
                 old = instance.get_dirty_fields().get(name, None)
-                if old:
+                if old and hasattr(old, 'storage'):
                     old.delete(save=False)
                     setattr(instance, name, new)
 
