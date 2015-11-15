@@ -54,7 +54,7 @@ class FileFieldExt(forms.FileField):
 
         # make sure the extension is correct
         ext = os.path.splitext(data.name)[1][1:]
-        if not ext in self.ext_whitelist and self.ext_whitelist:
+        if ext not in self.ext_whitelist and self.ext_whitelist:
             raise forms.ValidationError(self.error_messages['extension'])
 
         # get the mimetype from the UploadedFile

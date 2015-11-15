@@ -12,7 +12,11 @@ except ImportError:
     add_introspection_rules = None
 
 
-class MultipleValuesField(six.with_metaclass(models.SubfieldBase, models.TextField)):
+def identity(x):
+    return x
+
+
+class MultipleValuesField(models.TextField):
     FORM_ATTRIBUTES = {
         'delimiter': (',', None),
         'separator': (',', None),
@@ -27,7 +31,7 @@ class MultipleValuesField(six.with_metaclass(models.SubfieldBase, models.TextFie
     def __init__(self, *args, **kwargs):
         for attr, (default, wrapper) in self.FORM_ATTRIBUTES.items():
             if not wrapper:
-                wrapper = lambda x: x
+                wrapper = identity
             setattr(self, attr, wrapper(kwargs.pop(attr, default)))
 
         super(MultipleValuesField, self).__init__(*args, **kwargs)
@@ -47,6 +51,9 @@ class MultipleValuesField(six.with_metaclass(models.SubfieldBase, models.TextFie
             raise TypeError('Unsupported {0}'.format(six.text_type(type(value))))
 
         return value
+
+    def from_db_value(self, value, *args, **kwargs):
+        return self.to_python(value)
 
     def get_prep_value(self, value):
         try:

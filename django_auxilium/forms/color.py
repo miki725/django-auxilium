@@ -44,16 +44,14 @@ class ColorSelector(forms.CharField):
         ValueError
             If unsupported ``type`` color type is provided
         """
-        self.color_type = 'hex'
-
-        if 'type' in kwargs:
-            self.color_type = kwargs.pop('type')
-            if self.color_type not in ['hex']:
-                raise ValueError('Unsupported color type.')
+        self.color_type = kwargs.pop('type', 'hex')
 
         if self.color_type == 'hex':
             for p in ['hash_required', 'hash_output']:
                 setattr(self, p, kwargs.pop(p, None))
+
+        else:
+            raise ValueError('Unsupported color type.')
 
         super(self.__class__, self).__init__(*args, **kwargs)
 

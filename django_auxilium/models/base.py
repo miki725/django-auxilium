@@ -4,19 +4,12 @@ which don't require much logic.
 """
 
 from __future__ import unicode_literals, print_function
-from django.db import models, IntegrityError
+from django.db import models
 from django.conf import settings
 from django.utils.encoding import python_2_unicode_compatible
-from uuid import uuid4
 
 
-# Using get_user_model can cause circular inheritance due to custom
-# User models in Django >= 1.5 and therefore, the AUTH_USER_MODEL is
-# used to avoid the issue
-try:
-    User = settings.AUTH_USER_MODEL              # Django >= 1.5
-except AttributeError:
-    from django.contrib.auth.models import User  # Django <= 1.4
+User = settings.AUTH_USER_MODEL              # Django >= 1.5
 
 
 class CreatedModel(models.Model):
@@ -43,7 +36,7 @@ class ModifiedModel(models.Model):
     modified : DateTime
         The datetime when the model was last modified and saved
     """
-    modified = models.DateTimeField(auto_now_add=True, auto_now=True)
+    modified = models.DateTimeField(auto_now=True)
 
     class Meta(object):
         abstract = True
@@ -107,29 +100,3 @@ class TitleDescriptionModel(BaseModel):
 
     def __str__(self):
         return self.title
-
-
-class UUIDModel(models.Model):
-    uuid = models.CharField(max_length=32, blank=True, unique=True)
-
-    class Meta:
-        abstract = True
-
-    def generate_uuid(self, force=False):
-        if not self.uuid or force:
-            self.uuid = uuid4().get_hex()
-
-    def save(self, *args, **kwargs):
-        if not self.uuid:
-            self.generate_uuid()
-
-        if kwargs.pop('assure_unique_uuid', True):
-            while True:
-                try:
-                    return super(UUIDModel, self).save(*args, **kwargs)
-                except IntegrityError as e:
-                    if not 'uuid' in e.message:
-                        raise
-                    self.generate_uuid(True)
-        else:
-            return super(UUIDModel, self).save(*args, **kwargs)

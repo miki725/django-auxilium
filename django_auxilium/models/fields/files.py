@@ -7,11 +7,6 @@ import os
 from uuid import uuid4
 from django.db import models
 
-try:
-    from south.modelsinspector import add_introspection_rules
-except ImportError:
-    add_introspection_rules = None
-
 
 def random_filename_upload_to(path):
     """
@@ -124,27 +119,3 @@ OriginalFilenameRandomImageField = \
          (models.ImageField,),
          {'__init__': RandomFileFieldMeta.original_random_init,
           'deconstruct': RandomFileFieldMeta.deconstruct})
-
-if add_introspection_rules:
-    suffix = 'Random(?:File|Image)Field'
-    add_introspection_rules(
-        [
-            (
-                (RandomFileField, RandomImageField),
-                (),
-                {'upload_to': ('upload_to_path', {})}
-            ),
-            (
-                (OriginalFilenameRandomFileField, OriginalFilenameRandomImageField),
-                (),
-                {
-                    'upload_to': ('upload_to_path', {}),
-                    'filename_field': ('filename_field', {'default': 'filename'})
-                }
-            ),
-        ],
-        [
-            '^django_auxilium\.models\.fields\.files\.'
-            '(?:OriginalFilename)?{}'.format(suffix)
-        ]
-    )
