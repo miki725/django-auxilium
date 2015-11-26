@@ -2,9 +2,10 @@
 Collection of Django custom model field which have something to do with files
 """
 
-from __future__ import unicode_literals, print_function
+from __future__ import print_function, unicode_literals
 import os
-from uuid import uuid4
+import uuid
+
 from django.db import models
 
 
@@ -20,7 +21,7 @@ def random_filename_upload_to(path):
     Parameters
     ----------
     path : str
-        The path relative to ``media`` where the filaname should be uploaded to
+        The path relative to ``media`` where the filename should be uploaded to
 
     Returns
     -------
@@ -30,7 +31,7 @@ def random_filename_upload_to(path):
 
     def f(instance, filename):
         ext = filename.split('.')[-1]
-        filename = '{0}.{1}'.format(uuid4().hex, ext)
+        filename = '{0}.{1}'.format(uuid.uuid4().hex, ext)
         return os.path.join(path, filename)
 
     return f
@@ -62,30 +63,17 @@ def original_random_filename_upload_to(path, filename_field):
     return f
 
 
-class RandomFileFieldMeta(object):
-    @staticmethod
-    def random_init(self, *args, **kwargs):
-        assert kwargs.get('upload_to') is not None
+class RandomFileFieldDeconstructMixin(object):
+    """
+    Mixin for random filename file mixins which implements
+    Django's ``deconstruct`` to be Django-migrations compatible
+    """
 
-        self.upload_to_path = kwargs['upload_to']
-        kwargs['upload_to'] = random_filename_upload_to(kwargs['upload_to'])
-
-        super(self.__class__, self).__init__(*args, **kwargs)
-
-    @staticmethod
-    def original_random_init(self, *args, **kwargs):
-        assert kwargs.get('upload_to') is not None
-
-        self.filename_field = kwargs.pop('filename_field', 'filename')
-        self.upload_to_path = kwargs['upload_to']
-        kwargs['upload_to'] = original_random_filename_upload_to(kwargs['upload_to'],
-                                                                 self.filename_field)
-
-        super(self.__class__, self).__init__(*args, **kwargs)
-
-    @staticmethod
     def deconstruct(self):
-        name, path, args, kwargs = super(self.__class__, self).deconstruct()
+        """
+        Standard Django's ``deconstruct`` in order to enable migrations support
+        """
+        name, path, args, kwargs = super(RandomFileFieldDeconstructMixin, self).deconstruct()
         kwargs.update({
             'upload_to': self.upload_to_path,
         })
@@ -96,26 +84,73 @@ class RandomFileFieldMeta(object):
         return name, path, args, kwargs
 
 
-RandomFileField = \
-    type(str('RandomFileField'),
-         (models.FileField,),
-         {'__init__': RandomFileFieldMeta.random_init,
-          'deconstruct': RandomFileFieldMeta.deconstruct})
+class RandomFileNameFileFieldMixin(RandomFileFieldDeconstructMixin):
+    """
+    Mixing for a custom ``FileField`` which generates random filename
 
-OriginalFilenameRandomFileField = \
-    type(str('OriginalFilenameRandomFileField'),
-         (models.FileField,),
-         {'__init__': RandomFileFieldMeta.original_random_init,
-          'deconstruct': RandomFileFieldMeta.deconstruct})
+    Parameters
+    ----------
+    upload_to : str
+        String where uploaded files should be saved.
+        Within that directory, random filename will always be selected.
+    """
 
-RandomImageField = \
-    type(str('RandomImageField'),
-         (models.ImageField,),
-         {'__init__': RandomFileFieldMeta.random_init,
-          'deconstruct': RandomFileFieldMeta.deconstruct})
+    def __init__(self, *args, **kwargs):
+        assert kwargs.get('upload_to') is not None
 
-OriginalFilenameRandomImageField = \
-    type(str('OriginalFilenameRandomImageField'),
-         (models.ImageField,),
-         {'__init__': RandomFileFieldMeta.original_random_init,
-          'deconstruct': RandomFileFieldMeta.deconstruct})
+        self.upload_to_path = kwargs['upload_to']
+        kwargs['upload_to'] = random_filename_upload_to(kwargs['upload_to'])
+
+        super(RandomFileNameFileFieldMixin, self).__init__(*args, **kwargs)
+
+
+class RandomFileNameWithFilenameFileFieldMixin(RandomFileFieldDeconstructMixin):
+    """
+    Mixing for a custom ``FileField`` which generates random filename
+    and also stores original filename
+
+    Parameters
+    ----------
+    upload_to : str
+        String where uploaded files should be saved.
+        Within that directory, random filename will always be selected.
+    filename_field : str
+        Name of Django model field name where original filename
+        should be stored
+    """
+    def __init__(self, *args, **kwargs):
+        assert kwargs.get('upload_to') is not None
+
+        self.filename_field = kwargs.pop('filename_field', 'filename')
+        self.upload_to_path = kwargs['upload_to']
+        kwargs['upload_to'] = original_random_filename_upload_to(
+            kwargs['upload_to'],
+            self.filename_field
+        )
+
+        super(RandomFileNameWithFilenameFileFieldMixin, self).__init__(*args, **kwargs)
+
+
+RandomFileField = type(
+    str('RandomFileField'),
+    (RandomFileNameFileFieldMixin, models.FileField,),
+    {}
+)
+
+OriginalFilenameRandomFileField = type(
+    str('OriginalFilenameRandomFileField'),
+    (RandomFileNameWithFilenameFileFieldMixin, models.FileField,),
+    {}
+)
+
+RandomImageField = type(
+    str('RandomImageField'),
+    (RandomFileNameFileFieldMixin, models.ImageField,),
+    {}
+)
+
+OriginalFilenameRandomImageField = type(
+    str('OriginalFilenameRandomImageField'),
+    (RandomFileNameWithFilenameFileFieldMixin, models.ImageField,),
+    {}
+)

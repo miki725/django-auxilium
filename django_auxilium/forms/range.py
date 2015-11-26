@@ -1,140 +1,162 @@
-from __future__ import unicode_literals, print_function
+from __future__ import print_function, unicode_literals
+import re
+
 from django import forms
-from django.core.validators import EMPTY_VALUES
-from django.utils.translation import ugettext_lazy as _
-from django_auxilium.utils.range import AlphabeticNumbers
+from django.utils.translation import ugettext as _
+
+from django_auxilium.utils.range import AlphabeticNumbers, Range
 
 
-class RangeSelector(forms.CharField):
+class RangeSelectorField(forms.CharField):
     """
-    Custom Django form field which extends the ``CharField`` to support
-    validation for Excel-type rangeconfig selectors.
+    Range field which supports Excel-type rangeconfig selectors.
+
     The rangeconfig selection is made using the following format::
 
         <Column><Row>:<Column><Row>
 
-    Examples::
+    Examples
+    --------
+
+    ::
 
         A:A
         A1:A50
         1:50
+
+    Parameters
+    ----------
+    max_rows : int, optional
+        The maximum number of rows the range can have
+    max_columns : int, optional
+        The maximum number of columns the range can have
+    max_either : int, optional
+        The maximum number of rows and columns the range can have.
+        For example if the value is 1 then either a single column or
+        a single row can be selected.
+    required_rows : bool, optional
+        Whether rows must be supplied in the rangeconfig
+    required_columns : bool, optional
+        Whether columns must be supplied in the rangeconfig
     """
 
     default_error_messages = {
         "invalid": _("Invalid range value."),
         "values": _("Top-left coordinate must be first."),
         "max_rows": _("Too many rows selected. Maximum is {0}."),
-        "max_cols": _("Too many columns selected. Maximum is {0}."),
+        "max_columns": _("Too many columns selected. Maximum is {0}."),
         "max_either": _("Too many rows or columns selected. Maximum is {0}."),
+        "max_total": _("Too many total cells selected. Maximum is {0}."),
+        "required_rows": _("Row selection is required."),
+        "required_columns": _("Column selection is required."),
     }
 
     def __init__(self, *args, **kwargs):
+        self.max_rows = kwargs.pop('max_rows', None)
+        self.max_columns = kwargs.pop('max_columns', None)
+        self.max_either = kwargs.pop('max_either', None)
+        self.required_rows = kwargs.pop('required_rows', False)
+        self.required_columns = kwargs.pop('required_columns', False)
+
+        super(RangeSelectorField, self).__init__(*args, **kwargs)
+
+    def to_python(self, value):
         """
-        Init methods adds support for checking the maximum number
-        of rows or columns.
+        Convert range string value to ``Range`` rangeconfig value.
 
-        Parameters
-        ----------
-        max_rows : int
-            The maximum number of rows the range can have
-        max_cols : int
-            The maximum number of columns the range can have
-        max_either : int
-            The maximum number of rows or columns the range can have.
-            For example if the value is 1 then either a single column or
-            a single row can be selected.
+        Returns
+        -------
+        Range
         """
-        max_rows = kwargs.pop('max_rows', None)
-        max_cols = kwargs.pop('max_cols', None)
-        max_either = kwargs.pop('max_either', None)
-
-        self.max_rows = max_rows
-        self.max_cols = max_cols
-        self.max_either = max_either
-
-        super(self.__class__, self).__init__(*args, **kwargs)
-
-        # add css class to widget
-        self.widget.attrs['class'] = 'rangeselector'
-
-    def to_python(self, data, *args, **kwargs):
-        """
-        Uses ``CharField`` character validation. If is successful, this
-        functionvalidates the rangeconfig selection. It makes sure that either
-        column or row is provided and that they are both in increasing order -
-        that top-left coordinate is indeed top-left since it coordinates have
-        to be smaller compared to bottom-right.
-        """
-        data = super(self.__class__, self).to_python(data, *args, **kwargs)
-        if data in EMPTY_VALUES:
-            return ''
+        value = super(RangeSelectorField, self).to_python(value)
+        if value in self.empty_values:
+            return
 
         # extract all components
-        import re
-
         r = re.compile(
-            r'^(?P<A>(?P<A1>[A-Z]+):(?P<A2>[A-Z]+))$|^(?P<N>(?P<N1>\d+):(?P<N2>\d+))$|^(?P<AN>(?P<AN_A1>[A-Z]+)(?P<AN_N1>\d+):(?P<AN_A2>[A-Z]+)(?P<AN_N2>\d+))$'
+            r'^(?P<A>(?P<A1>[A-Z]+):(?P<A2>[A-Z]+))$'
+            r'|^(?P<N>(?P<N1>\d+):(?P<N2>\d+))$'
+            r'|^(?P<AN>(?P<AN_A1>[A-Z]+)(?P<AN_N1>\d+):(?P<AN_A2>[A-Z]+)(?P<AN_N2>\d+))$'
         )
 
         # make sure overall pattern is valid
-        if not r.findall(data):
+        if not r.findall(value):
             raise forms.ValidationError(self.error_messages['invalid'])
 
         datarange = None
 
         # extract rangeconfig values
-        m = r.match(data)
+        m = r.match(value)
         for group in ['A', 'N', 'AN']:
             if not m.group(group):
                 continue
             if group == 'A':
-                datarange = (
+                datarange = Range(
                     AlphabeticNumbers.int_from_str(m.group('A1')),
                     None,
                     AlphabeticNumbers.int_from_str(m.group('A2')),
                     None
                 )
             elif group == 'N':
-                datarange = (
+                datarange = Range(
                     None,
                     int(m.group('N1')),
                     None,
                     int(m.group('N2'))
                 )
             else:
-                datarange = (
+                datarange = Range(
                     AlphabeticNumbers.int_from_str(m.group('AN_A1')),
                     int(m.group('AN_N1')),
                     AlphabeticNumbers.int_from_str(m.group('AN_A2')),
                     int(m.group('AN_N2'))
                 )
 
-        # make sure the first rangeconfig coordinate is top-left
-        for i in range(2):
-            if datarange[i]:
-                if datarange[2 + i] < datarange[i]:
-                    raise forms.ValidationError(self.error_messages['values'])
-
-        # functions for validating rows and columns
-        def validateMax(n, offset=0):
-            if datarange[0 + offset]:
-                if datarange[2 + offset] - datarange[0 + offset] + 1 > n:
-                    return False
-                return True
-            return None
-
-        # validate the maximum rows and columns
-        if self.max_cols:
-            if validateMax(self.max_cols) is False:
-                raise forms.ValidationError(
-                    self.error_messages['max_cols'].format(self.max_cols))
-        if self.max_rows:
-            if validateMax(self.max_rows, 1) is False:
-                raise forms.ValidationError(
-                    self.error_messages['max_rows'].format(self.max_rows))
-        if self.max_either:
-            if not validateMax(self.max_either, 1) and not validateMax(self.max_either):
-                raise forms.ValidationError(
-                    self.error_messages['max_either'].format(self.max_either))
-
         return datarange
+
+    def validate(self, value):
+        """
+        Validate the rangeconfig value.
+
+        Following is validated:
+
+        * rows or columns are supplied depending on ``required_row``
+          and ``required_columns`` parameters
+        * rangeconfig is given as top-left to bottom-right
+        * columns range is within ``max_columns``
+        * rows range is within ``max_rows``
+        * both columns and rows range is within ``max_either``
+        """
+        if value in self.empty_values:
+            return
+
+        if self.required_columns and not value.first_column:
+            raise forms.ValidationError(
+                self.error_messages['required_columns']
+            )
+        if self.required_rows and not value.first_row:
+            raise forms.ValidationError(
+                self.error_messages['required_rows']
+            )
+
+        # make sure the first rangeconfig coordinate is top-left
+        for i, j in zip(value[:2], value[2:]):
+            if i and j and i > j:
+                raise forms.ValidationError(self.error_messages['values'])
+
+        if self.max_columns and value.columns > self.max_columns:
+            raise forms.ValidationError(
+                self.error_messages['max_columns'].format(self.max_columns)
+            )
+
+        if self.max_rows and value.rows > self.max_rows:
+            raise forms.ValidationError(
+                self.error_messages['max_rows'].format(self.max_rows)
+            )
+
+        if self.max_either:
+            if all([value.columns > self.max_either,
+                    value.rows > self.max_either]):
+                raise forms.ValidationError(
+                    self.error_messages['max_either'].format(self.max_either)
+                )

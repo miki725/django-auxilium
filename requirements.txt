@@ -1,6 +1,3 @@
-coverage
 django
-django-nose
-mock
-tox
+pathlib
 six

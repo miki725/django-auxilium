@@ -1,6 +1,4 @@
-from .color import *
-from .files import *
-from .multiple_values import *
-from .range import *
-from .time import *
-from .widgets import *
+from .color import *  # noqa
+from .files import *  # noqa
+from .multiple_values import *  # noqa
+from .range import *  # noqa

@@ -1,2 +1,3 @@
-from .decorators import *
-from .lazy import *
+from .cache import *  # noqa
+from .decorators import *  # noqa
+from .lazy import *  # noqa

@@ -1,4 +1,41 @@
-from __future__ import unicode_literals, print_function
+from __future__ import division, print_function, unicode_literals
+from collections import namedtuple
+
+
+class Range(namedtuple('rangenamedtuple', ['first_column', 'first_row', 'second_column', 'second_row'])):
+    """
+    Helper data-structure for storing excel-type ranges.
+
+    Also has some useful range-related properties
+    """
+
+    @property
+    def columns(self):
+        """
+        Gets the number of columns in a given range.
+
+        Returns
+        -------
+        columns : int
+            The number of columns
+        """
+        if self.first_column and self.second_column:
+            return self.second_column - self.first_column + 1
+        return 0
+
+    @property
+    def rows(self):
+        """
+        Gets the number of columns in a given range.
+
+        Returns
+        -------
+        columns : int
+            The number of columns
+        """
+        if self.first_row and self.second_row:
+            return self.second_row - self.first_row + 1
+        return 0
 
 
 class AlphabeticNumbers(object):
@@ -54,7 +91,8 @@ class AlphabeticNumbers(object):
 
         string = ''
 
-        # recursive method
+        # recursive method for education purposes
+        # however regular loop is used due to better performance
         #
         # if number < 27:
         #     return chr(number + 64)
@@ -77,63 +115,3 @@ class AlphabeticNumbers(object):
                 break
 
         return string[::-1]
-
-
-def get_range_num_cols(range_value):
-    """
-    Gets the number of columns in a given range.
-
-    Parameters
-    ----------
-    range_value : array
-        The range to calculate the number of columns
-
-    Returns
-    -------
-    columns : int
-        The number of columns
-
-    """
-    if range_value[0]:
-        return range_value[2] - range_value[0] + 1
-    return 0
-
-
-def get_range_num_rows(range_value):
-    """
-    Gets the number of rows in a given range.
-
-    Parameters
-    ----------
-    range_value : array
-        The range to calculate the number of rows
-
-    Returns
-    -------
-    rows : int
-        The number of rows
-    """
-    if range_value[1]:
-        return range_value[3] - range_value[1] + 1
-    return 0
-
-
-def get_range_diag(range_value):
-    """
-    Gets the length of the diagonal in a given range.
-
-    Parameters
-    ----------
-    range_value : array
-        The range to calculate the length of the diagonal
-
-    Returns
-    -------
-    length : int
-        The length of the diagonal
-    """
-    import math
-
-    n_rows = get_range_num_rows(range_value)
-    n_cols = get_range_num_cols(range_value)
-    return math.sqrt(n_rows ** 2 + n_cols ** 2)

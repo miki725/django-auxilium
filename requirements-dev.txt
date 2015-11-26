@@ -1,0 +1,15 @@
+-rrequirements.txt
+coverage
+django-dirtyfields
+django-formtools
+flake8
+importanize
+mock
+pytest
+pytest-cov
+pytest-django
+python-magic
+sphinx
+sphinx-autobuild
+sphinx-rtd-theme
+tox

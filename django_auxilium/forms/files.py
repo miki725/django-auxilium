@@ -1,26 +1,55 @@
-from __future__ import unicode_literals, print_function
-import os
+from __future__ import print_function, unicode_literals
+import pathlib
+
 from django import forms
-from django.core.validators import EMPTY_VALUES
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext as _
+
+from django_auxilium.utils.content_type import get_content_type
 
 
-class FileFieldExt(forms.FileField):
+class TypedFileField(forms.FileField):
     """
-    Extension of FileField which allows to make sure the uploaded file has
-    the appropriate extension and/or mimetype.
+    Typed FileField which allows to make sure the uploaded file has
+    the appropriate type.
+
+    File type can be verified either by extension and/or mimetype.
 
     This field accepts all the parameters as FileField, however in addition
-    it accepts ``ext_whitelist`` and/or ``type_whitelist`` parameters which
-    are lists defining allowed extensions and/or mime types::
+    it accepts some additional parameters as documented below.
 
-        FileFieldExt(ext_whitelist=['jpg', 'jpeg'],
-                     type_whitelist=['image/jpeg'])
+    Examples
+    --------
+
+    ::
+
+        TypedFileField(ext_whitelist=['jpg', 'jpeg'],
+                       type_whitelist=['image/jpeg'])
+
+    .. warning::
+        If ``use_magic`` is used, please make sure that ``python-magic``
+        is installed. This library does not require it by default.
+
+    Parameters
+    ----------
+    ext_whitelist : list, optional
+        List of allowed file extensions. Note that each extension
+        should emit the first period. For example for filename
+        ``'example.jpg'``, the allowed extension should be ``'jpg'``.
+    type_whitelist : list, optional
+        List of allowed file mimetypes.
+    use_magic : bool, optional
+        If ``type_whitelist`` is specified, this boolean determines
+        whether to use ``python-magic`` (based of top of ``libmagic``)
+        to determine the mimetypes of files instead of relying
+        on Django's ``UploadedFile.content_type``.
+        Django does not take any real care to determine any accurately
+        the mimetype so it is recommended to leave this parameter
+        as ``True`` which is the default value.
     """
 
     default_error_messages = {
-        "extension": _("File extension is not supported."),
-        "mimetype": _("File mimetype is not supported.")
+        'extension': _('File extension is not supported.'),
+        'mimetype': _('File mimetype is not supported.')
     }
 
     def __init__(self, *args, **kwargs):
@@ -28,43 +57,48 @@ class FileFieldExt(forms.FileField):
         Init methods extends the default FileField init however adds
         support for extra parameters
         """
-        ext_whitelist = []
-        type_whitelist = []
-
-        if 'ext_whitelist' in kwargs:
-            ext_whitelist = kwargs.pop("ext_whitelist")
-        if 'type_whitelist' in kwargs:
-            type_whitelist = kwargs.pop("type_whitelist")
+        ext_whitelist = kwargs.pop('ext_whitelist', [])
+        type_whitelist = kwargs.pop('type_whitelist', [])
 
         self.ext_whitelist = [i.lower() for i in ext_whitelist]
         self.type_whitelist = [i.lower() for i in type_whitelist]
+        self.use_magic = kwargs.pop('use_magic', True)
 
-        super(self.__class__, self).__init__(*args, **kwargs)
+        super(TypedFileField, self).__init__(*args, **kwargs)
 
-    def to_python(self, data, *args, **kwargs):
+    def validate(self, value):
         """
-        Uses FileField's ``to_python`` method to convert data to python,
-        however in addition makes sure that the file is of allowed extension
-        and/or mimetype if they are specified. If not, raises standard Django
-        ``ValidationError`` for both extension and/or mimetype.
+        Validate that the file is of supported extension and/or type.
         """
-        data = super(self.__class__, self).to_python(data, *args, **kwargs)
-        if data in EMPTY_VALUES:
+        super(TypedFileField, self).validate(value)
+        if value in self.empty_values:
             return None
 
         # make sure the extension is correct
-        ext = os.path.splitext(data.name)[1][1:]
-        if ext not in self.ext_whitelist and self.ext_whitelist:
+        ext = pathlib.Path(value.name).name.split('.', 1)[-1]
+        if self.ext_whitelist and ext not in self.ext_whitelist:
             raise forms.ValidationError(self.error_messages['extension'])
 
+        # getting mimetype of a file could use some resources
+        # so if we don't need to check mimetype, we can return faster
+        if not self.type_whitelist:
+            return value
+
         # get the mimetype from the UploadedFile
-        try:
-            mimetype = data.content_type
-        except AttributeError:
-            raise forms.ValidationError(self.error_messages['invalid'])
+        if self.use_magic:
+            try:
+                mimetype = get_content_type(value)
+            except Exception:
+                raise forms.ValidationError(self.error_messages['invalid'])
+
+        else:
+            try:
+                mimetype = value.content_type
+            except AttributeError:
+                raise forms.ValidationError(self.error_messages['invalid'])
 
         # make sure the mimetype is correct
-        if mimetype not in self.type_whitelist and self.type_whitelist:
+        if mimetype not in self.type_whitelist:
             raise forms.ValidationError(self.error_messages['mimetype'])
 
-        return data
+        return value

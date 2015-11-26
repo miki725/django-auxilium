@@ -6,10 +6,19 @@ import six
 from .functools import Decorator
 
 
-class StringOnion(Decorator):
-    def get_wrapped_object(self):
-        super(StringOnion, self).get_wrapped_object()
+class TextOnion(Decorator):
+    """
+    Simple text onion decorator.
 
+    This decorator ensures that the decorated
+    function always receives text string even
+    if the decorator receives binary text.
+    Once the wrapped function computes the result,
+    decorator returns the same data-type as it
+    has received.
+    """
+
+    def get_wrapped_object(self):
         def wrapped(string):
             is_binary = False
             if isinstance(string, six.binary_type):
@@ -26,4 +35,4 @@ class StringOnion(Decorator):
         return wrapped
 
 
-string_onion = StringOnion.to_decorator()
+text_onion = TextOnion.as_decorator()

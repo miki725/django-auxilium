@@ -3,13 +3,14 @@ Collection of simple abstract base models with a few additional attributes
 which don't require much logic.
 """
 
-from __future__ import unicode_literals, print_function
-from django.db import models
+from __future__ import print_function, unicode_literals
+
 from django.conf import settings
+from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 
 
-User = settings.AUTH_USER_MODEL              # Django >= 1.5
+User = settings.AUTH_USER_MODEL
 
 
 class CreatedModel(models.Model):
@@ -18,7 +19,7 @@ class CreatedModel(models.Model):
 
     Attributes
     ----------
-    created : DateTime
+    created : DateTimeField
         The datetime when the model instance is created
     """
     created = models.DateTimeField(auto_now_add=True)
@@ -33,7 +34,7 @@ class ModifiedModel(models.Model):
 
     Attributes
     ----------
-    modified : DateTime
+    modified : DateTimeField
         The datetime when the model was last modified and saved
     """
     modified = models.DateTimeField(auto_now=True)
@@ -44,8 +45,7 @@ class ModifiedModel(models.Model):
 
 class BaseModel(CreatedModel, ModifiedModel):
     """
-    This model adds date created and last date modified attributes.
-    Inherits from ``CreatedModel`` and ``ModifiedModel``.
+    This model adds date created and last date modified attributes
     """
 
     class Meta(object):
@@ -73,7 +73,8 @@ class NoteModel(BaseModel):
 
     Attributes
     ----------
-    notes : str
+    notes : TextField
+        Text field for storing notes
     """
     notes = models.TextField(blank=True)
 
@@ -84,13 +85,13 @@ class NoteModel(BaseModel):
 @python_2_unicode_compatible
 class TitleDescriptionModel(BaseModel):
     """
-    This model adds a notes field
+    This model adds a title and description fields
 
     Attributes
     ----------
-    title : str
+    title : CharField
         Maximum length is 256 character
-    description : str
+    description : TextField
     """
     title = models.CharField(max_length=256)
     description = models.TextField(blank=True)
