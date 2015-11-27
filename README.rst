@@ -31,7 +31,7 @@ Docs
 
 For some of the highlights about the library and the most useful features
 you are encouraged to take a look at the documentation, particularly
-**Highlights** document.
+`Highlights <http://django-auxilium.readthedocs.org/en/latest/highlights.html>`_ document.
 
 Installation
 ------------
