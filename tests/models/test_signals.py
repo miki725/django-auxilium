@@ -9,6 +9,7 @@ from django.test import TestCase
 
 from django_auxilium.models import (
     AutoSignals,
+    FieldSpec,
     FileFieldAutoChangeDelete,
     FileFieldAutoDelete,
 )
@@ -38,25 +39,29 @@ class TestFileFieldAutoDelete(object):
     def test_init(self):
         decorator = FileFieldAutoDelete()
 
-        assert decorator.fields == '*'
+        assert decorator.field_names == '*'
         assert decorator.signal is models.signals.post_delete
         assert decorator.signal_name_pattern == 'post_delete_{model.__name__}_delete_{field}'
 
     @mock.patch.object(FileFieldAutoDelete, 'connect_signal_function')
     @mock.patch.object(FileFieldAutoDelete, 'validate_fields')
+    @mock.patch.object(FileFieldAutoDelete, 'get_field_names')
     @mock.patch.object(FileFieldAutoDelete, 'get_fields')
     @mock.patch.object(FileFieldAutoDelete, 'validate_model')
     def test_get_wrapped_object(self, mock_validate_model,
-                                mock_get_fields, mock_validate_fields,
+                                mock_get_fields, mock_get_field_names,
+                                mock_validate_fields,
                                 mock_connect_signal_function):
         self.decorator.to_wrap = mock.sentinel.model
 
         # sanity assert
-        assert self.decorator.fields == '*'
+        assert self.decorator.field_names == '*'
         assert self.decorator.get_wrapped_object() is mock.sentinel.model
+        assert self.decorator.field_names == mock_get_field_names.return_value
         assert self.decorator.fields == mock_get_fields.return_value
 
         mock_validate_model.assert_called_once_with()
+        mock_get_field_names.assert_called_once_with()
         mock_get_fields.assert_called_once_with()
         mock_validate_fields.assert_called_once_with()
         mock_connect_signal_function.assert_called_once_with()
@@ -78,25 +83,25 @@ class TestFileFieldAutoDelete(object):
 
         assert self.decorator.validate_model() is None
 
-    def test_get_fields_single_field(self):
-        self.decorator.fields = 'foo'
+    def test_get_field_names_single_field(self):
+        self.decorator.field_names = 'foo'
 
-        assert self.decorator.get_fields() == ['foo']
+        assert self.decorator.get_field_names() == ['foo']
 
-    def test_get_fields_single_multiple_fields(self):
-        self.decorator.fields = ['foo', 'bar']
+    def test_get_field_names_single_multiple_fields(self):
+        self.decorator.field_names = ['foo', 'bar']
 
-        assert self.decorator.get_fields() == ['foo', 'bar']
+        assert self.decorator.get_field_names() == ['foo', 'bar']
 
-    def test_get_fields_single_wildcard(self):
-        self.decorator.fields = '*'
+    def test_get_field_names_single_wildcard(self):
+        self.decorator.field_names = '*'
         self.decorator.to_wrap = self.get_model()
 
-        assert self.decorator.get_fields() == ['file_field']
+        assert self.decorator.get_field_names() == ['file_field']
 
     @mock.patch.object(FileFieldAutoDelete, 'validate_field')
     def test_validate_fields(self, mock_validate_field):
-        self.decorator.fields = ['foo']
+        self.decorator.field_names = ['foo']
 
         assert self.decorator.validate_fields() is None
 
@@ -121,14 +126,14 @@ class TestFileFieldAutoDelete(object):
 
     def test_get_signal_name_single(self):
         self.decorator.to_wrap = self.get_model()
-        self.decorator.fields = ['foo']
+        self.decorator.fields = [FieldSpec('foo', None)]
 
         name = self.decorator.get_signal_name()
         assert name == 'post_delete_Model_delete_foo'
 
     def test_get_signal_name_multiple(self):
         self.decorator.to_wrap = self.get_model()
-        self.decorator.fields = ['foo', 'bar']
+        self.decorator.fields = [FieldSpec('foo', None), FieldSpec('bar', None)]
 
         name = self.decorator.get_signal_name()
         assert name == 'post_delete_Model_delete_foo_bar'
@@ -136,7 +141,7 @@ class TestFileFieldAutoDelete(object):
     def test_get_signal_function_no_file(self):
         model = self.get_model()
         self.decorator.to_wrap = model
-        self.decorator.fields = ['file_field']
+        self.decorator.fields = [FieldSpec('file_field', None)]
 
         signal = self.decorator.get_signal_function()
 
@@ -151,7 +156,7 @@ class TestFileFieldAutoDelete(object):
     def test_get_signal_function_with_file(self):
         model = self.get_model()
         self.decorator.to_wrap = model
-        self.decorator.fields = ['file_field']
+        self.decorator.fields = [FieldSpec('file_field', None)]
 
         signal = self.decorator.get_signal_function()
 
@@ -166,7 +171,7 @@ class TestFileFieldAutoDelete(object):
     @mock.patch.object(FileFieldAutoDelete, 'get_signal_function')
     def test_connect_signal_function(self, mock_get_signal_function):
         self.decorator.signal = signal = mock.MagicMock()
-        self.decorator.fields = ['foo']
+        self.decorator.fields = [FieldSpec('foo', None)]
         self.decorator.to_wrap = model = self.get_model()
 
         assert self.decorator.connect_signal_function() is None
@@ -202,7 +207,7 @@ class TestFileFieldAutoChangeDelete(TestCase):
     def test_init(self):
         decorator = FileFieldAutoChangeDelete()
 
-        assert decorator.fields == '*'
+        assert decorator.field_names == '*'
         assert decorator.signal is models.signals.post_save
         assert decorator.signal_name_pattern == 'post_save_{model.__name__}_changedelete_{field}'
 
@@ -246,7 +251,7 @@ class TestFileFieldAutoChangeDelete(TestCase):
         mock_get_dirty_fields.return_value = {}
         model = self.get_model()
         self.decorator.to_wrap = model
-        self.decorator.fields = ['file_field']
+        self.decorator.fields = [FieldSpec('file_field', None)]
 
         signal = self.decorator.get_signal_function()
 
@@ -263,11 +268,12 @@ class TestFileFieldAutoChangeDelete(TestCase):
     def test_get_signal_function(
             self, mock_is_dirty, mock_get_dirty_fields):
         f = mock.MagicMock()
+        field = mock.MagicMock()
         mock_is_dirty.return_value = True
         mock_get_dirty_fields.return_value = {'file_field': f}
         model = self.get_model()
         self.decorator.to_wrap = model
-        self.decorator.fields = ['file_field']
+        self.decorator.fields = [FieldSpec('file_field', field)]
 
         signal = self.decorator.get_signal_function()
 
@@ -279,6 +285,9 @@ class TestFileFieldAutoChangeDelete(TestCase):
         mock_is_dirty.assert_called_once_with()
         mock_get_dirty_fields.assert_called_once_with()
         f.delete.assert_called_once_with(save=False)
+        assert f.instance == instance
+        assert f.field == field
+        assert f.storage == field.storage
         assert instance.file_field == 'foo'
 
 

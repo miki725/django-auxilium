@@ -1,11 +1,19 @@
 from __future__ import print_function, unicode_literals
 import inspect
+from collections import namedtuple
 
 import six
 from django.db import models
 from django.dispatch.dispatcher import Signal
 
 from django_auxilium.utils.functools import Decorator, cache
+
+
+FieldSpec = namedtuple('FieldSpec', ['name', 'field'])
+"""
+Field specification which is used by file descriptors to reference
+the field name and field object itself during decorator operations.
+"""
 
 
 class FileFieldAutoDelete(Decorator):
@@ -59,14 +67,18 @@ class FileFieldAutoDelete(Decorator):
 
     Attributes
     ----------
+    field_names : list
+        List of normalized field names which should be removed on change
     fields : list
-        Same as the ``fields`` parameter
+        List of validated :py:class:`.FieldSpec` which signal
+        will use to remove changed files
     signal_name_pattern : str
         Same as the ``signal_name_pattern`` parameter
     """
 
     def __init__(self, fields='*', signal=None, signal_name_pattern=None):
-        self.fields = fields
+        self.fields = []
+        self.field_names = fields
         self.signal = signal or models.signals.post_delete
         self.signal_name_pattern = signal_name_pattern or 'post_delete_{model.__name__}_delete_{field}'
 
@@ -80,20 +92,31 @@ class FileFieldAutoDelete(Decorator):
         See Also
         --------
         validate_model
-        get_fields
+        get_field_names
         validate_fields
         connect_signal_function
         """
         self.validate_model()
-        self.fields = self.get_fields()
+        self.field_names = self.get_field_names()
         self.validate_fields()
+        self.fields = self.get_fields()
         self.connect_signal_function()
 
         return self.to_wrap
 
     def get_fields(self):
         """
-        Get list of fields to be removed in the created signal
+        Get list of :py:class:`.FieldSpec` for all the fields
+        to be removed
+        """
+        return [
+            FieldSpec(name, self.get_field_by_name(name))
+            for name in self.field_names
+        ]
+
+    def get_field_names(self):
+        """
+        Get list of field names to be removed in the created signal
 
         This method is primarily used to normalize the list of
         fields in case it is provided as a string, list or a
@@ -105,10 +128,10 @@ class FileFieldAutoDelete(Decorator):
             List of field names which should be removed
             in the created signal
         """
-        if isinstance(self.fields, (list, tuple)):
-            return self.fields
+        if isinstance(self.field_names, (list, tuple)):
+            return self.field_names
 
-        elif self.fields == '*':
+        elif self.field_names == '*':
             return [
                 i.name for i in
                 self.to_wrap._meta.fields
@@ -116,7 +139,27 @@ class FileFieldAutoDelete(Decorator):
             ]
 
         else:
-            return [self.fields]
+            return [self.field_names]
+
+    def get_field_by_name(self, name):
+        """
+        Get a Django model field for the given field name
+        from the decorated model
+
+        Parameters
+        ----------
+        name : str
+            Name of the field to get
+
+        Returns
+        -------
+        Field
+            Django model field instance
+        """
+        return next(iter(filter(
+            lambda f: f.name == name,
+            self.to_wrap._meta.fields
+        )), None)
 
     def validate_model(self):
         """
@@ -148,7 +191,7 @@ class FileFieldAutoDelete(Decorator):
         --------
         validate_field
         """
-        for field in self.fields:
+        for field in self.field_names:
             self.validate_field(field)
 
     def validate_field(self, name):
@@ -167,10 +210,7 @@ class FileFieldAutoDelete(Decorator):
         TypeError
             When the field is not a ``FileField``
         """
-        field = next(iter(filter(
-            lambda f: f.name == name,
-            self.to_wrap._meta.fields
-        )), None)
+        field = self.get_field_by_name(name)
 
         if field is None:
             raise AttributeError('Field "{0}" cannot be found'.format(name))
@@ -191,7 +231,7 @@ class FileFieldAutoDelete(Decorator):
         """
         return self.signal_name_pattern.format(
             model=self.to_wrap,
-            field='_'.join(self.fields),
+            field='_'.join(i.name for i in self.fields),
         )
 
     @cache
@@ -207,10 +247,10 @@ class FileFieldAutoDelete(Decorator):
             """
             Automatically remove the file field when model instance is deleted.
             """
-            for name in self.fields:
-                field = getattr(instance, name, None)
-                if field:
-                    method = getattr(field, 'delete', None)
+            for name, field in self.fields:
+                value = getattr(instance, name, None)
+                if value:
+                    method = getattr(value, 'delete', None)
                     if method and callable(method):
                         method(save=False)
 
@@ -350,11 +390,10 @@ class FileFieldAutoChangeDelete(FileFieldAutoDelete):
 
             def receiver(sender, instance, *args, **kwargs): pass
         """
-
         def autoremove(sender, instance, *args, **kwargs):
             if instance.is_dirty():
                 dirty_fields = instance.get_dirty_fields()
-                for name in self.fields:
+                for name, field in self.fields:
                     # while removing file Django also deletes
                     # reference to it on the model
                     # hence new file will be lost
@@ -362,7 +401,18 @@ class FileFieldAutoChangeDelete(FileFieldAutoDelete):
                     # after removing old file
                     new = getattr(instance, name)
                     old = dirty_fields.get(name, None)
-                    if old and hasattr(old, 'storage'):
+                    if old:
+                        # the way Django pickles FileField, it does not
+                        # preserve all instance attributes
+                        # since they are normally reset by the
+                        # FileFieldDescriptor hence we need to manually
+                        # restore them here because get_dirty_fields()
+                        # probably returns copies of the fields
+                        # since it needs to compare them to determine
+                        # what is dirty and what is not
+                        old.instance = instance
+                        old.field = field
+                        old.storage = field.storage
                         old.delete(save=False)
                         setattr(instance, name, new)
 
