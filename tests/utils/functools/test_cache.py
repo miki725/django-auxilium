@@ -176,6 +176,12 @@ class TestCacheDescriptor(object):
 
         assert self.instance.foo == 'bar'
 
+    def test_set_read_only(self):
+        self.descriptor.as_property = True
+
+        with pytest.raises(AttributeError):
+            self.instance.foo = 'foo'
+
     def test_delete_property_not_present(self):
         self.descriptor.as_property = True
 
