@@ -2,7 +2,7 @@ from __future__ import print_function, unicode_literals
 import pathlib
 
 from django import forms
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext_lazy as _
 
 from django_auxilium.utils.content_type import get_content_type
 
