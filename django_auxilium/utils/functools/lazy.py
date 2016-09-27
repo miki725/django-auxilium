@@ -216,7 +216,8 @@ class LazyWrapper(six.with_metaclass(LazyWrapperMeta, Promise)):
         and for everything else returns attribute from the
         computed lazy object.
         """
-        get = lambda x: object.__getattribute__(self, x)
+        def get(x):
+            return object.__getattribute__(self, x)
 
         # retrieve lazy attributes as normal
         if name.startswith('_lazy_'):
