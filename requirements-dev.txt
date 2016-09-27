@@ -5,7 +5,7 @@ django-formtools
 flake8
 importanize
 mock
-pytest
+pytest>=2.9
 pytest-cov
 pytest-django
 python-magic
