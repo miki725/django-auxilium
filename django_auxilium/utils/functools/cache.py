@@ -309,6 +309,11 @@ class CacheDescriptor(object):
                 return f
 
     def __set__(self, instance, value):
+        if self.as_property:
+            cache = self.get_cache(instance)
+            # no args and kwargs since this is only for case when cache is used as property
+            return cache.set(value)
+
         # required to be overwritten for pypy
         # see https://bitbucket.org/pypy/pypy/issues/2033/attributeerror-object-attribute-is-read
         # even though ticket is resolved its still affecting pypy3
