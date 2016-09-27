@@ -5,15 +5,15 @@ from django import forms
 from django_auxilium.views.wizard import WizardView
 
 
-class TestForm(forms.Form):
+class _TestForm(forms.Form):
     pass
 
 
-class TestWizardView(WizardView):
-    form_list = [TestForm]
+class _TestWizardView(WizardView):
+    form_list = [_TestForm]
 
 
 def test_wizard_view():
-    assert TestWizardView.get_initkwargs()['form_list'] == {
-        '0': TestForm,
+    assert _TestWizardView.get_initkwargs()['form_list'] == {
+        '0': _TestForm,
     }
