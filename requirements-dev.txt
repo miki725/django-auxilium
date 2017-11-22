@@ -5,9 +5,10 @@ django-formtools
 flake8
 importanize
 mock
-pytest>=2.9
+pdbpp
 pytest-cov
 pytest-django
+pytest>=2.9
 python-magic
 sphinx
 sphinx-autobuild
