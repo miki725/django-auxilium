@@ -18,6 +18,8 @@ MINIFY_INPUT = """
     </script>
 </head>
 <body>
+    <strong>Hello</strong> <i>World</i>
+    <strong>Hello</strong><i>Mars</i>
     <div>Content Here</div>
     <textarea>
 Input
@@ -42,11 +44,11 @@ Here
 </html>
 """
 
-MINIFY_EXPECTED = """<html><head><title>Minify Test</title><script>
+MINIFY_EXPECTED = """<html> <head> <title>Minify Test</title><script>
         (function() {
             console.log('hello world');
         })();
-    </script></head><body><div>Content Here</div><textarea>
+    </script></head> <body> <strong>Hello</strong> <i>World</i> <strong>Hello</strong><i>Mars</i> <div>Content Here</div><textarea>
 Input
 Here
   123
@@ -61,7 +63,7 @@ Here
         (function() {
             console.log('inside body script');
         })();
-    </script></body></html>"""
+    </script></body> </html>"""
 
 
 EXTRACT_INPUT = """

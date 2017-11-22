@@ -2,7 +2,6 @@ from __future__ import print_function, unicode_literals
 import re
 
 import six
-from django.utils.html import strip_spaces_between_tags
 from six.moves.html_entities import name2codepoint
 from six.moves.html_parser import HTMLParser
 
@@ -11,6 +10,7 @@ from .string import text_onion
 
 EXCLUDE_TAGS = ('textarea', 'pre', 'code', 'script',)
 RE_WHITESPACE = re.compile(r'\s{2,}|\n')
+RE_SPACE_BETWEEN_TAGS = re.compile(r'>(?:\s{2,}|\n)<')
 RE_EXCLUDE_TAGS = re.compile(
     """(               # group for results to be included in re.split
           <(?:{0})     # match beginning of one of exclude tags
@@ -27,10 +27,11 @@ def simple_minify(html):
     """
     Minify HTML with very simple algorithm.
 
-    This function tries to minify HTML by stripping all spaces between all html tags
-    (e.g. ``</div>    <div>`` -> ``</div><div>``). This step is accomplished by using
-    Django's ``strip_spaces_between_tags`` method. In addition to that, this function
-    replaces all whitespace (more then two consecutive whitespace characters or new line)
+    This function tries to minify HTML by stripping most spaces between all html tags
+    (e.g. ``</div>    <div>`` -> ``</div> <div>``). Note that not all spaces are removed
+    since sometimes that can adjust rendered HTML (e.g. ``<strong>Hello</strong> <i></i>``).
+    In addition to that, this function replaces all whitespace
+    (more then two consecutive whitespace characters or new line)
     with a space character except inside excluded tags such as ``pre`` or ``textarea``.
 
     **Though process**:
@@ -54,8 +55,7 @@ def simple_minify(html):
        appended to final HTML since as explained above, they are guaranteed
        to be content of excluded tags hence do not require minification.
     #. All even indexed elements are minified by stripping whitespace between
-       tags by using Django's ``strip_spaces_between_tags`` and redundant
-       whitespace is stripped in general via simple regex.
+       tags and redundant whitespace is stripped in general via simple regex.
 
     You can notice that the process does not involve parsing HTML since that
     usually adds some overhead (e.g. using beautiful soup). By using 2 regex
@@ -65,7 +65,8 @@ def simple_minify(html):
     html = ''
     for i, component in enumerate(components):
         if i % 2 == 0:
-            component = strip_spaces_between_tags(component.strip())
+            component = component.strip()
+            component = RE_SPACE_BETWEEN_TAGS.sub('> <', component)
             component = RE_WHITESPACE.sub(' ', component)
             html += component
         else:
