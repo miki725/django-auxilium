@@ -3,6 +3,11 @@
 History
 -------
 
+0.1.4 (2018-05-26)
+~~~~~~~~~~~~~~~~~~
+
+* Added: New APi for setting cache values. Now can do ``Class.method.push(value, *args, **kwargs)``.
+
 0.1.3 (2018-05-24)
 ~~~~~~~~~~~~~~~~~~
 

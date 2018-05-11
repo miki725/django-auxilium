@@ -146,6 +146,11 @@ class TestCacheDescriptor(object):
         with pytest.raises(NotInCache):
             self.descriptor.pop(self.instance)
 
+    def test_push(self):
+        assert self.instance.foo() == 'bar'
+        self.instance.foo.push('foo')
+        assert self.instance.foo() == 'foo'
+
     def test_get_class(self):
         assert self.klass.foo is self.bar
 
@@ -157,6 +162,10 @@ class TestCacheDescriptor(object):
         assert isinstance(self.instance.foo.pop, partial)
         assert isinstance(self.instance.foo.pop.func, types.MethodType)
         assert self.instance.foo.pop.func.__self__ is self.instance
+
+        assert isinstance(self.instance.foo.push, partial)
+        assert isinstance(self.instance.foo.push.func, types.MethodType)
+        assert self.instance.foo.push.func.__self__ is self.instance
 
         assert self.instance.foo.__doc__ == self.bar.__doc__
 

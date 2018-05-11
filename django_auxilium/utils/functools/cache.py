@@ -218,6 +218,9 @@ class CacheDescriptor(object):
         >>> print(f.foo())
         computing
         bar
+        >>> f.foo.push('another value')
+        >>> print(f.foo())
+        another value
 
     Parameters
     ----------
@@ -289,6 +292,13 @@ class CacheDescriptor(object):
         cache = self.get_cache(instance)
         return cache.delete(*args, **kwargs)
 
+    def push(self, instance, value, *args, **kwargs):
+        """
+        Method for setting custom cache value given function parameters
+        """
+        cache = self.get_cache(instance)
+        cache.set(value, *args, **kwargs)
+
     def _wrap(self, wrapping, proxy, instance):
         f = types.MethodType(proxy, instance)
         return wraps(wrapping)(partial(f))
@@ -306,6 +316,7 @@ class CacheDescriptor(object):
             else:
                 f = self._wrap(self.method, self.getter, instance)
                 f.pop = self._wrap(self.__class__.pop, self.pop, instance)
+                f.push = self._wrap(self.__class__.push, self.push, instance)
                 return f
 
     def __set__(self, instance, value):
