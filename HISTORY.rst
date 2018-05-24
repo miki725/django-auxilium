@@ -3,6 +3,11 @@
 History
 -------
 
+0.1.3 (2018-05-24)
+~~~~~~~~~~~~~~~~~~
+
+* Fixed: Django 2.0 support for minify middleware.
+
 0.1.2 (2017-11-22)
 ~~~~~~~~~~~~~~~~~~
 
