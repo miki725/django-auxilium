@@ -23,9 +23,13 @@ class MinifyHTMLMiddleware(object):
         What is used to actually minify HTML
     """
 
-    def __init__(self):
+    def __init__(self, get_response=None):
+        self.get_response = get_response
         if settings.DEBUG:
             raise MiddlewareNotUsed
+
+    def __call__(self, request):
+        return self.process_response(request, self.get_response(request))
 
     def process_response(self, request, response):
         """
