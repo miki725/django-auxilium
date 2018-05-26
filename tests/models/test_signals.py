@@ -1,4 +1,5 @@
 from __future__ import print_function, unicode_literals
+import random
 
 import mock
 import pytest
@@ -25,14 +26,14 @@ class TestFileFieldAutoDelete(object):
             foo_field = models.CharField(max_length=32)
 
             class Meta(object):
-                app_label = 'foo'
+                app_label = str(random.randrange(1000, 2000))
 
         return Model
 
     def get_empty_model(self):
         class ModelEmpty(models.Model):
             class Meta(object):
-                app_label = 'foo'
+                app_label = str(random.randrange(1000, 2000))
 
         return ModelEmpty
 
@@ -193,14 +194,14 @@ class TestFileFieldAutoChangeDelete(TestCase):
             foo_field = models.CharField(max_length=32)
 
             class Meta(object):
-                app_label = 'foo'
+                app_label = str(random.randrange(1000, 2000))
 
         return Model
 
     def get_empty_model(self):
         class ModelEmpty(DirtyFieldsMixin, models.Model):
             class Meta(object):
-                app_label = 'foo'
+                app_label = str(random.randrange(1000, 2000))
 
         return ModelEmpty
 
@@ -323,7 +324,7 @@ class TestAutoSignals(object):
     def test_validate_model_not_implementing_getter(self):
         class Foo(models.Model):
             class Meta(object):
-                app_label = 'foo'
+                app_label = str(random.randrange(1000, 2000))
 
         self.decorator.to_wrap = Foo
         with pytest.raises(AttributeError):
@@ -334,7 +335,7 @@ class TestAutoSignals(object):
             get_signals = 'foo'
 
             class Meta(object):
-                app_label = 'foo'
+                app_label = str(random.randrange(1000, 2000))
 
         self.decorator.to_wrap = Foo
         with pytest.raises(TypeError):
@@ -343,7 +344,7 @@ class TestAutoSignals(object):
     def test_validate_model_valid(self):
         class Foo(models.Model):
             class Meta(object):
-                app_label = 'foo'
+                app_label = str(random.randrange(1000, 2000))
 
             @classmethod
             def get_signals(self):
@@ -368,7 +369,7 @@ class TestAutoSignals(object):
 
         class Foo(models.Model):
             class Meta(object):
-                app_label = 'foo'
+                app_label = str(random.randrange(1000, 2000))
 
             @classmethod
             def get_signals(self):
@@ -386,7 +387,7 @@ class TestAutoSignals(object):
 
         class Foo(models.Model):
             class Meta(object):
-                app_label = 'foo'
+                app_label = str(random.randrange(1000, 2000))
 
             @classmethod
             def get_signals(self):
