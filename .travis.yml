@@ -5,7 +5,8 @@ python:
   - "2.7"
 
 env:
-  - "$DJANGO='django<1.9'"
+  - "$DJANGO='django<2'"
+  - "$DJANGO='django'"
 
 sudo: false
 
