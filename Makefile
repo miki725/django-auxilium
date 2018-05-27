@@ -29,14 +29,14 @@ clean-test:  ## clean test artifacts like converage
 clean-all: clean  ## clean everything including tox
 	rm -rf .tox/
 
-lint:  ## lint whole library
+lint: clean  ## lint whole library
 	flake8 .
 	importanize --ci django_auxilium tests test_project
 
-test:  ## run all tests
+test: clean  ## run all tests
 	py.test -sv --doctest-modules --cov=django_auxilium --cov-report=term-missing django_auxilium/ tests/
 
-test-all:  ## run all tests with tox with different python/django versions
+test-all: clean  ## run all tests with tox with different python/django versions
 	tox
 
 check: clean lint test  ## check library which runs lint and tests
