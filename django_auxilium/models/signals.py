@@ -37,12 +37,18 @@ class FileFieldAutoDelete(Decorator):
 
     ::
 
+        >>> import random
         >>> @file_field_auto_delete  # equivalent to @file_field_auto_delete('*')
         ... class FooModel(models.Model):
+        ...     class Meta(object):
+        ...         app_label = str(random.randrange(1000, 2000))
         ...     file = models.FileField(upload_to='foo')
 
+        >>> import random
         >>> @file_field_auto_delete('file')
         ... class FooModel(models.Model):
+        ...     class Meta(object):
+        ...         app_label = str(random.randrange(1000, 2000))
         ...     file = models.FileField(upload_to='foo')
 
     Parameters
@@ -322,20 +328,27 @@ class FileFieldAutoChangeDelete(FileFieldAutoDelete):
 
     ::
 
+        >>> import random
         >>> from dirtyfields import DirtyFieldsMixin
 
         >>> @file_field_auto_change_delete  # equivalent to @file_field_auto_change_delete('*')
         ... class FooModel(DirtyFieldsMixin, models.Model):
+        ...     class Meta(object):
+        ...         app_label = str(random.randrange(1000, 2000))
         ...     file = models.FileField(upload_to='foo')
 
         >>> @file_field_auto_change_delete('file')
         ... class FooModel(DirtyFieldsMixin, models.Model):
+        ...     class Meta(object):
+        ...         app_label = str(random.randrange(1000, 2000))
         ...     file = models.FileField(upload_to='foo')
 
         >>> # remote both on delete and change
         >>> @file_field_auto_delete
         ... @file_field_auto_change_delete
         ... class FooModel(DirtyFieldsMixin, models.Model):
+        ...     class Meta(object):
+        ...         app_label = str(random.randrange(1000, 2000))
         ...     file = models.FileField(upload_to='foo')
 
     Parameters
@@ -450,8 +463,11 @@ class AutoSignals(Decorator):
     :Callables:
         An example::
 
+            >>> import random
             >>> @auto_signals
             ... class MyModel(models.Model):
+            ...     class Meta(object):
+            ...         app_label = str(random.randrange(1000, 2000))
             ...     @staticmethod
             ...     def do_pre_save(sender, instance, *args, **kwargs):
             ...         print('triggered pre_save')
@@ -470,8 +486,11 @@ class AutoSignals(Decorator):
     :Dictionary:
         An example::
 
+            >>> import random
             >>> @auto_signals
             ... class MyModel(models.Model):
+            ...     class Meta(object):
+            ...         app_label = str(random.randrange(1000, 2000))
             ...     @classmethod
             ...     def get_signals(cls):
             ...         def so_something(sender, instance, *args, **kwargs):

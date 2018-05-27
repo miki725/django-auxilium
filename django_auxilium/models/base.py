@@ -61,7 +61,7 @@ class UserModel(models.Model):
     user : User
         The user associated with the model
     """
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     class Meta(object):
         abstract = True

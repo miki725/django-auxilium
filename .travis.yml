@@ -1,22 +1,18 @@
 language: python
 
 python:
-  - "3.5"
+  - "3.6"
   - "2.7"
-
-env:
-  - "$DJANGO='django<1.9'"
+  - "pypy3"
 
 sudo: false
 
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install:
-  - pip install $DJANGO
-  - pip install -r requirements-dev.txt
+  - pip install tox-travis
   - pip install coveralls
-  - pip freeze
 
 # command to run tests, e.g. python setup.py test
-script: make check
+script: tox
 
 after_success: coveralls

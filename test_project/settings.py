@@ -13,7 +13,7 @@ INSTALLED_APPS = [
     'django_auxilium',
 ]
 
-MIDDLEWARE_CLASSES = []
+MIDDLEWARE = []
 
 STATIC_URL = '/static/'
 SECRET_KEY = 'foo'
